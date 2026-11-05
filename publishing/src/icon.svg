@@ -1,10 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Synergy boat club icon (card 173): the club shield, parted Oxford navy and racing green,
-       with crossed brass oars, on a walnut plate. Swap for Ben's final crest once agreed. -->
-  <rect x="4" y="4" width="120" height="120" rx="24" fill="#3a2414"/>
-  <rect x="9" y="9" width="110" height="110" rx="20" fill="none" stroke="#8a6a3a" stroke-width="3"/>
-  <path d="M28 22h72v40c0 26-18 40-36 46C46 102 28 88 28 62z" fill="#1d3461"/>
-  <path d="M64 22h36v40c0 26-18 40-36 46z" fill="#1f5a3a"/>
-  <path d="M28 22h72v40c0 26-18 40-36 46C46 102 28 88 28 62z" fill="none" stroke="#c9a227" stroke-width="5"/>
-  <g stroke="#e0c068" stroke-width="7" stroke-linecap="round"><path d="M42 36l44 50M86 36L42 86"/></g>
+  <!-- Synergy icon, Ben's brand draft 2 (card 173): the "merge" mark, two lines meeting and
+       carrying on as one, in ivory on midnight, with a dark oak top strip as the one warm accent.
+       Colours are stand-ins for Ben's named palette until his exact values are shared. -->
+  <defs><clipPath id="tile"><rect x="4" y="4" width="120" height="120" rx="26"/></clipPath></defs>
+  <g clip-path="url(#tile)">
+    <rect x="4" y="4" width="120" height="120" fill="#0f1b2d"/>
+    <rect x="4" y="4" width="120" height="12" fill="#6b4423"/>
+  </g>
+  <g transform="translate(22 26) scale(3.5)" fill="none" stroke="#f1ece2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6c6 0 7 6 11 6h7M3 18c6 0 7-6 11-6"/>
+  </g>
 </svg>
