@@ -1,5 +1,5 @@
 // Synergy side panel: today's VC leads, what's in play, history and settings.
-// Follows the prototype in design/dashboard-prototype.html (card 166).
+// Flow from design/dashboard-prototype.html (card 166); look from The Ledger landing page (card 173).
 // Sign-in (extension/auth.js): WorkOS through Chrome's sign-in window. Every API call carries the token.
 import { accessToken, currentUser, signIn, signOut } from './auth.js';
 
@@ -42,7 +42,8 @@ const shortDay = iso => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB',
 const daysSince = iso => Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
 const OUT = { sent: 'Waiting', call: 'Call', rejected: 'Rejected', no_reply: 'No reply', not_for_me: 'Not for me' };
 const REASONS = ['Portfolio too young', 'Wrong sector', 'Bad timing', 'Know them already'];
-const TICK = '✓';
+const WORDS = { 5: 'five', 10: 'ten' };
+const inWords = n => WORDS[n] ?? String(n);
 
 // ---------- State ----------
 const state = { user: null, signInError: null, view: 'today', day: null, profile: null, history: null, filter: 'all', open: null, repliesOpen: true, editing: null, error: null, loading: true, saved: false };
@@ -94,8 +95,10 @@ Check recent news on ${lead.name}${best ? ` and ${best.name}` : ''} first and us
 }
 
 // ---------- Pieces ----------
-const sig = tier => `<span class="sig" data-tier="${tier}" role="img" aria-label="Tier ${tier}"><i></i><i></i><i></i></span>`;
-const matchesLine = lead => `${lead.matching_companies} ${lead.matching_companies === 1 ? 'match' : 'matches'} · ${esc(lead.hq_city || lead.hq_country || '')}`;
+const no = i => `<span class="no" aria-hidden="true">${String(i + 1).padStart(2, '0')}</span>`;
+const TICK_SVG = '<svg viewBox="0 0 30 30" aria-hidden="true"><path d="M5 16 C8 18 10 21 12 24 C15 16 20 9 27 4"/></svg>';
+const matchesLine = lead => `Tier ${lead.tier} · ${lead.matching_companies} ${lead.matching_companies === 1 ? 'match' : 'matches'} · ${esc(lead.hq_city || lead.hq_country || '')}`;
+const longDay = iso => new Date(`${iso}T12:00:00Z`).toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
 
 function companyTable(lead) {
   if (!lead.companies?.length) return '<p class="hint">No portfolio companies match your search any more.</p>';
@@ -167,24 +170,24 @@ function detail(lead, inPlay) {
   </div>`;
 }
 
-function todayRow(lead) {
+function todayRow(lead, i = 0) {
   const sent = Boolean(lead.sent_at), nope = lead.status === 'not_for_me', open = state.open === lead.uuid;
   const right = nope ? '<span class="pill" data-st="not_for_me">Not for me</span>'
-    : `<button type="button" class="sent" data-act="sent" data-id="${lead.uuid}" aria-pressed="${sent}" aria-label="Sent to ${esc(lead.name)}">${sent ? `Sent ${TICK}` : 'Sent?'}</button>`;
+    : `<button type="button" class="tick" data-act="sent" data-id="${lead.uuid}" aria-pressed="${sent}" aria-label="Sent: ${esc(lead.name)}">${TICK_SVG}</button>`;
   const tag = lead.carried_from ? `<span class="from">From ${esc(shortDay(lead.carried_from).split(' ')[0])}</span>` : (lead.first_shown === state.day?.date && state.day?.has_history ? '<span class="new">New</span>' : '');
-  return `<li class="lead${open ? ' open' : ''}${sent || nope ? ' done' : ''}${nope ? ' crossed' : ''}">
-    <div class="rowwrap"><button type="button" class="row" data-act="open" data-id="${lead.uuid}" aria-expanded="${open}">${sig(lead.tier)}
+  return `<li class="lead${open ? ' open' : ''}${sent || nope ? ' done' : ''}${nope ? ' crossed' : ''}" data-tier="${lead.tier}" style="--i:${i}">
+    <div class="rowwrap"><button type="button" class="row" data-act="open" data-id="${lead.uuid}" aria-expanded="${open}">${no(i)}
       <span><span class="name"><span class="t">${esc(lead.name)}</span>${tag}</span><span class="meta">${matchesLine(lead)}</span></span></button>${right}</div>
     ${open ? detail(lead, false) : ''}</li>`;
 }
 
-function playRow(lead) {
+function playRow(lead, i = 0) {
   const open = state.open === lead.uuid, quiet = isQuiet(lead);
   const when = lead.sent_at ? `sent ${shortDay(lead.sent_at.slice(0, 10))}` : `shown ${shortDay(lead.first_shown)}`;
   const crossed = ['rejected', 'no_reply', 'not_for_me'].includes(lead.status);
-  return `<li class="lead${open ? ' open' : ''}${crossed ? ' crossed' : ''}">
-    <div class="rowwrap"><button type="button" class="row" data-act="open" data-id="${lead.uuid}" aria-expanded="${open}">${sig(lead.tier)}
-      <span><span class="name"><span class="t">${esc(lead.name)}</span>${lead.notes ? '<span class="from" title="Has notes">✎</span>' : ''}</span><span class="meta">${esc(contactOf(lead).name ?? '')} · ${when}</span></span></button>
+  return `<li class="lead${open ? ' open' : ''}${crossed ? ' crossed' : ''}" data-tier="${lead.tier}" style="--i:${i}">
+    <div class="rowwrap"><button type="button" class="row" data-act="open" data-id="${lead.uuid}" aria-expanded="${open}">${no(i)}
+      <span><span class="name"><span class="t">${esc(lead.name)}</span>${lead.notes ? '<span class="from" title="Has notes">✎</span>' : ''}</span><span class="meta">Tier ${lead.tier} · ${esc(contactOf(lead).name ?? '')} · ${when}</span></span></button>
       <span class="pill" data-st="${quiet ? 'quiet' : lead.status}">${quiet ? 'Quiet 7d' : OUT[lead.status]}</span></div>
     ${open ? detail(lead, true) : ''}</li>`;
 }
@@ -193,7 +196,7 @@ function playRow(lead) {
 function renderToday() {
   const day = state.day;
   const n = day?.leads_per_day ?? state.profile?.leads_per_day ?? 10;
-  document.getElementById('title-text').textContent = `Your ${n}`;
+  document.getElementById('title-text').textContent = `Your ${inWords(n)}`;
   document.getElementById('date').textContent = shortDay(day?.date ?? todayIso());
   if (!day && !state.error) return `<p class="hint">Finding today's VCs…</p>${'<div class="skel"></div>'.repeat(5)}`;
   if (!day) return `<div class="alert err"><b>Can't reach Synergy.</b> ${esc(state.error)}</div><button class="btn small" type="button" data-act="retry">Try again</button>`;
@@ -203,8 +206,7 @@ function renderToday() {
   const { current, best } = day.streak;
   let h = '';
   if (state.error) h += `<div class="alert err"><b>Couldn't save that.</b> ${esc(state.error)}</div>`;
-  if (current || best) h += `<div class="streak"><span class="dots">${Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.min(current, 10) ? 'on' : ''}"></i>`).join('')}</span><span>${current ? `<b>${current}-day streak</b>` : 'No streak yet'}${best >= current && best ? ` · best ${best}` : ''}</span></div>`;
-  if (allDone) h += `<div class="welldone"><b>That's your ${leads.length}.</b><span>${current >= 10 ? `${current} days in a row. That's ${current * n} VCs. Nobody else is doing this.` : current > 1 ? `${current} days in a row${current >= best ? ', your best yet' : ''}. Same again tomorrow.` : 'Day one of a streak. Same again tomorrow.'}</span></div>`;
+  if (allDone) h += `<div class="welldone"><span>${current >= 10 ? `${current} days in a row. That's ${current * n} VCs. Nobody else is doing this.` : current > 1 ? `${current} days in a row${current >= best ? ', your best yet' : ''}. Same again tomorrow.` : 'Day one of a streak. Same again tomorrow.'}</span></div>`;
   h += day.in_play.filter(l => l.outcome === 'call' && l.outcome_at?.slice(0, 10) === day.date).map(l => `<div class="alert call"><b>Call requested</b> · ${esc(contactOf(l).name ?? '')}, ${esc(l.name)}</div>`).join('');
   const waiting = day.in_play.filter(l => l.status === 'sent');
   if (waiting.length) {
@@ -213,11 +215,13 @@ function renderToday() {
     if (state.repliesOpen) h += `<ul class="replies">${waiting.map(l => `<li><span class="nm">${esc(contactOf(l).name ?? l.name)} · ${esc(l.name)}<span${isQuiet(l) ? ' class="unk"' : ''}>${isQuiet(l) ? `${daysSince(l.sent_at)} days` : `Sent ${shortDay(l.sent_at.slice(0, 10))}`}</span></span>
       <div class="outcome" role="group" aria-label="Reply from ${esc(l.name)}">${['call', 'rejected', 'no_reply'].map(k => `<button type="button" data-act="outcome" data-id="${l.uuid}" data-v="${k}" data-st="${k}" aria-pressed="false">${OUT[k]}</button>`).join('')}</div></li>`).join('')}</ul>`;
   }
-  h += `<div class="sublbl"><span>Today</span><span>${handled ? `${sentCount} sent · ${leads.length - handled} to go` : ''}</span></div>`;
-  if (leads.length) h += `<ul class="leads">${leads.map(todayRow).join('')}</ul>`;
+  const streak = current ? `<span class="streak"><span class="mono">Streak · ${current} ${current === 1 ? 'day' : 'days'}</span><span class="squares" aria-hidden="true">${Array.from({ length: 10 }, (_, i) => `<i class="${i < Math.min(current, 10) ? 'on' : ''}"></i>`).join('')}</span></span>` : '';
+  if (leads.length) h += `<section class="ledger"><div class="lhead"><h3>${esc(longDay(day.date))}</h3>${streak}</div>
+    <ul class="leads">${leads.map(todayRow).join('')}</ul>
+    <div class="lfoot"><span class="total" aria-live="polite">${allDone ? `That's your ${inWords(leads.length)}.` : `${sentCount} of ${leads.length} sent`}</span><span class="mono">${leads.length - handled ? `${leads.length - handled} to go` : 'Same again tomorrow'}</span></div></section>`;
   if (day.pool_empty) h += `<div class="empty"><p>${leads.length ? `Only ${leads.length} VCs match your search today.` : "That's every VC that matches your search."} Widen it to see more tomorrow.</p><button class="btn ghost small" type="button" data-go="settings">Change search</button></div>`;
   const play = [...day.in_play].sort((a, b) => ({ call: 0, sent: 1, rejected: 2, no_reply: 3 }[a.status] - { call: 0, sent: 1, rejected: 2, no_reply: 3 }[b.status]));
-  if (play.length) h += `<div class="sublbl"><span>In play</span><span>${play.length}</span></div><ul class="leads">${play.map(playRow).join('')}</ul>`;
+  if (play.length) h += `<section class="ledger"><div class="lhead"><h3>In play</h3><span class="mono">${play.length} open</span></div><ul class="leads">${play.map(playRow).join('')}</ul></section>`;
   return h;
 }
 
@@ -227,7 +231,7 @@ function renderHistory() {
   const hist = state.history;
   if (!hist) return `${'<div class="skel"></div>'.repeat(4)}`;
   return `<div class="filters" role="group" aria-label="Filter history">${FILTERS.map(([k, label]) => `<button type="button" data-act="filter" data-v="${k}" aria-pressed="${state.filter === k}">${label} ${hist.counts[k] ?? 0}</button>`).join('')}</div>
-    ${hist.leads.length ? `<ul class="leads">${hist.leads.map(playRow).join('')}</ul>` : '<div class="empty"><p>Nothing here yet.</p></div>'}`;
+    ${hist.leads.length ? `<section class="ledger"><ul class="leads">${hist.leads.map(playRow).join('')}</ul></section>` : '<div class="empty"><p>Nothing here yet.</p></div>'}`;
 }
 
 const COUNTRIES = ['United Kingdom', 'Spain'];
@@ -274,8 +278,11 @@ async function loadToday() {
     state.day = { ...day, has_history: history.counts.all > day.leads.length };
     state.error = null;
   } catch (error) { state.error = error.message; }
+  const first = state.loading;
   state.loading = false;
+  if (first && state.day) view.dataset.deal = '';
   render();
+  if (first) setTimeout(() => delete view.dataset.deal, 1200);
 }
 async function loadHistory() {
   try { state.history = await call(`/vcs/history?status=${state.filter}`); state.error = null; } catch (error) { state.error = error.message; }
@@ -388,8 +395,9 @@ function showSignedOut() {
   nav.hidden = true;
   document.getElementById('title-text').textContent = 'Synergy';
   view.innerHTML = `<section class="signed-out">
-    <h2>Sign in to see your leads</h2>
-    <p>Your VC leads, notes and replies are saved to your account.</p>
+    <span class="mono">A Chrome extension for dealmakers</span>
+    <h2>Ten calling cards.<br><em>Every morning.</em></h2>
+    <p>Sign in to see today's leads. Your notes and replies are kept with your account.</p>
     <button type="button" class="btn" data-act="sign-in">Sign in</button>
     ${state.signInError ? `<p class="error" role="alert">${esc(state.signInError)}</p>` : ''}
   </section>`;
