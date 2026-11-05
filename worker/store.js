@@ -39,15 +39,25 @@ export async function saveProfile(db, input, now = new Date().toISOString()) {
   return { ...profile, updated_at: now };
 }
 
-const LEAD_SELECT = `SELECT l.id, l.lead_date, l.tier, l.notes, l.reached_out, l.feedback_at,
+const LEAD_SELECT = `SELECT l.id, l.lead_date, l.tier, l.notes, l.notes_at, l.reached_out, l.feedback_at,
+  l.sent_at, l.dismissed_at, l.dismiss_reason, l.outcome, l.outcome_at,
   c.uuid, c.name, c.domain, c.website, c.linkedin, c.dealroom_url, c.tagline, c.hq_city, c.hq_country, c.launch_year,
   c.employees, c.employee_growth_1y, c.funding_total, c.funding_rounds, c.revenue, c.revenue_year, c.status, c.founders_json,
   c.ebitda, c.ebitda_year, c.profit, c.profit_year, c.industries_json
   FROM leads l JOIN companies c ON c.uuid = l.company_uuid`;
 
+// One status per lead, derived from the feedback columns:
+// new -> sent (waiting) -> call | rejected | no_reply, or new -> not_for_me.
+export function leadStatus(row) {
+  if (row.dismissed_at) return 'not_for_me';
+  if (row.outcome) return row.outcome;
+  if (row.sent_at) return 'sent';
+  return 'new';
+}
+
 function toLead(row) {
   const { founders_json, industries_json, ...lead } = row;
-  return { ...lead, reached_out: row.reached_out === null ? null : row.reached_out === 1,
+  return { ...lead, status: leadStatus(row), reached_out: row.reached_out === null ? null : row.reached_out === 1,
     founders: founders_json ? JSON.parse(founders_json) : null, industries: industries_json ? JSON.parse(industries_json) : null };
 }
 
@@ -72,14 +82,88 @@ export async function leadsFor(db, date) {
   return results.map(toLead);
 }
 
+export const OUTCOMES = ['call', 'rejected', 'no_reply'];
+
+// Applies feedback from the dashboard. Every field is optional:
+//   sent: true | false            marks the lead sent (or undoes it)
+//   not_for_me: true | false      dismisses the lead (or undoes it)
+//   reason: string                why it's not for me (optional, kept with the dismissal)
+//   outcome: 'call' | 'rejected' | 'no_reply' | null   what happened after sending
+//   notes: string                 free text, replaces the current notes
+//   reached_out: true | false | null   the extension's original yes/no; true also marks it sent
+//   tier: 'A' | 'B' | 'C' | null
+// Returns { lead } or { error: { code, message, status } }.
 export async function updateLead(db, id, input, now = new Date().toISOString()) {
-  const lead = await db.prepare('SELECT id FROM leads WHERE id = ?').bind(id).first();
-  if (!lead) return null;
-  if ('reached_out' in input) {
-    await db.prepare('UPDATE leads SET reached_out = ?, feedback_at = ? WHERE id = ?')
-      .bind(input.reached_out === null ? null : input.reached_out ? 1 : 0, now, id).run();
+  const current = await db.prepare('SELECT id, sent_at, dismissed_at, outcome FROM leads WHERE id = ?').bind(id).first();
+  if (!current) return { error: { code: 'not_found', message: 'No such lead.', status: 404 } };
+  if ('outcome' in input && input.outcome !== null && !OUTCOMES.includes(input.outcome)) {
+    return { error: { code: 'invalid_outcome', message: `outcome must be one of ${OUTCOMES.join(', ')}, or null.`, status: 400 } };
   }
-  if (typeof input.notes === 'string') await db.prepare('UPDATE leads SET notes = ? WHERE id = ?').bind(input.notes.slice(0, 4000), id).run();
-  if ('tier' in input) await db.prepare('UPDATE leads SET tier = ? WHERE id = ?').bind(['A', 'B', 'C'].includes(input.tier) ? input.tier : null, id).run();
-  return toLead(await db.prepare(`${LEAD_SELECT} WHERE l.id = ?`).bind(id).first());
+
+  const set = [];
+  const values = [];
+  const assign = (column, value) => { set.push(`${column} = ?`); values.push(value); };
+  let sentAt = current.sent_at;
+  let dismissedAt = current.dismissed_at;
+
+  // The original yes/no still works, and a yes counts as sent.
+  if ('reached_out' in input) {
+    assign('reached_out', input.reached_out === null ? null : input.reached_out ? 1 : 0);
+    assign('feedback_at', now);
+    if (input.reached_out === true && !sentAt) { sentAt = now; assign('sent_at', now); }
+    if (input.reached_out === false && sentAt && !('sent' in input)) { sentAt = null; assign('sent_at', null); }
+  }
+  if ('sent' in input) {
+    sentAt = input.sent ? (sentAt ?? now) : null;
+    assign('sent_at', sentAt);
+    if (sentAt) { dismissedAt = null; assign('dismissed_at', null); assign('dismiss_reason', null); }
+  }
+  if ('not_for_me' in input) {
+    dismissedAt = input.not_for_me ? (dismissedAt ?? now) : null;
+    assign('dismissed_at', dismissedAt);
+    // Not for me replaces Sent, as on the dashboard.
+    if (dismissedAt && !('sent' in input)) { sentAt = null; assign('sent_at', null); }
+    if (!dismissedAt) assign('dismiss_reason', null);
+  }
+  if (typeof input.reason === 'string' && dismissedAt) assign('dismiss_reason', input.reason.trim().slice(0, 200) || null);
+  if ('outcome' in input) {
+    if (input.outcome !== null && !sentAt) {
+      return { error: { code: 'not_sent', message: 'Mark the lead as sent before recording what happened.', status: 409 } };
+    }
+    assign('outcome', input.outcome);
+    assign('outcome_at', input.outcome === null ? null : now);
+  } else if (!sentAt && current.outcome) {
+    // Undoing Sent also clears what happened next.
+    assign('outcome', null); assign('outcome_at', null);
+  }
+  if (typeof input.notes === 'string') { assign('notes', input.notes.slice(0, 4000)); assign('notes_at', now); }
+  if ('tier' in input) assign('tier', ['A', 'B', 'C'].includes(input.tier) ? input.tier : null);
+
+  if (set.length) await db.prepare(`UPDATE leads SET ${set.join(', ')} WHERE id = ?`).bind(...values, id).run();
+  return { lead: toLead(await db.prepare(`${LEAD_SELECT} WHERE l.id = ?`).bind(id).first()) };
+}
+
+// History: every lead ever shown, newest first, filtered the way the
+// dashboard's History screen filters. Leads are never deleted.
+export const HISTORY_FILTERS = {
+  all: '1 = 1',
+  new: 'l.sent_at IS NULL AND l.dismissed_at IS NULL',
+  waiting: 'l.sent_at IS NOT NULL AND l.outcome IS NULL AND l.dismissed_at IS NULL',
+  call: "l.outcome = 'call'",
+  closed: "l.outcome IN ('rejected', 'no_reply')",
+  not_for_me: 'l.dismissed_at IS NOT NULL'
+};
+
+export async function leadHistory(db, { status = 'all', limit = 50, before = null } = {}) {
+  const where = [HISTORY_FILTERS[status]];
+  const values = [];
+  if (before) { where.push('l.id < ?'); values.push(before); }
+  const size = Math.min(Math.max(1, limit), 200);
+  const { results } = await db.prepare(`${LEAD_SELECT} WHERE ${where.join(' AND ')} ORDER BY l.id DESC LIMIT ?`).bind(...values, size + 1).all();
+  const page = results.slice(0, size).map(toLead);
+  const counts = {};
+  for (const [key, condition] of Object.entries(HISTORY_FILTERS)) {
+    counts[key] = (await db.prepare(`SELECT COUNT(*) AS n FROM leads l WHERE ${condition}`).first()).n;
+  }
+  return { leads: page, counts, next_before: results.length > size ? page[page.length - 1].id : null };
 }
