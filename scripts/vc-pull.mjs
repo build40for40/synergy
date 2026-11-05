@@ -177,6 +177,8 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     remote: { type: 'boolean', default: false },
     vcs: { type: 'string', default: '10' },
     minutes: { type: 'string' },
+    // Dealroom location ids, taken in turn: 93 UK, 283 Spain, 34 Europe.
+    countries: { type: 'string', default: `${UK},${SPAIN}` },
     'max-companies': { type: 'string', default: '150' },
     rps: { type: 'string', default: '4' }
   } });
@@ -191,6 +193,6 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const minutes = values.minutes === undefined ? null : Number(values.minutes);
   try {
     log(`Pulling VC facts into ${values.remote ? 'remote' : 'local'} D1 until ${values.vcs} VCs have matches${minutes === null ? '' : ` or ${minutes} minutes pass`}.`);
-    log(`Done: ${JSON.stringify(await pullVcs({ client, d1, vcs: Number(values.vcs), maxCompanies: Number(values['max-companies']), log, minutes, signal: controller.signal }))}`);
+    log(`Done: ${JSON.stringify(await pullVcs({ client, d1, countries: values.countries.split(',').map(Number), vcs: Number(values.vcs), maxCompanies: Number(values['max-companies']), log, minutes, signal: controller.signal }))}`);
   } finally { d1.close(); }
 }
