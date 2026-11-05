@@ -1,10 +1,12 @@
 import { toCompanyRow } from './dealroom.js';
 
 export const LEADS_PER_DAY = 10;
-const COMPANY_COLUMNS = ['uuid', 'name', 'domain', 'website', 'linkedin', 'dealroom_url', 'tagline', 'hq_city', 'hq_country',
+export const COMPANY_COLUMNS = ['uuid', 'name', 'domain', 'website', 'linkedin', 'dealroom_url', 'tagline', 'hq_city', 'hq_country',
   'launch_year', 'employees', 'employee_growth_1y', 'funding_total', 'funding_rounds', 'revenue', 'revenue_year', 'status',
-  'founders_json', 'raw_json', 'fetched_at'];
-const UPSERT_COMPANY = `INSERT INTO companies (${COMPANY_COLUMNS.join(', ')}) VALUES (${COMPANY_COLUMNS.map(() => '?').join(', ')})
+  'founders_json', 'about', 'industries_json', 'classifications_json', 'signal_rating', 'monthly_visits', 'is_hiring', 'open_jobs',
+  'valuation', 'raw_json', 'fetched_at'];
+export const FINANCIAL_COLUMNS = ['ebitda', 'ebitda_year', 'profit', 'profit_year', 'financials_json', 'financials_fetched_at'];
+export const UPSERT_COMPANY = `INSERT INTO companies (${COMPANY_COLUMNS.join(', ')}) VALUES (${COMPANY_COLUMNS.map(() => '?').join(', ')})
   ON CONFLICT(uuid) DO UPDATE SET ${COMPANY_COLUMNS.slice(1).map(column => `${column}=excluded.${column}`).join(', ')}`;
 
 export function upsertCompanies(db, companies, fetchedAt = new Date().toISOString()) {
@@ -40,7 +42,8 @@ export async function saveProfile(db, input, now = new Date().toISOString()) {
 const LEAD_SELECT = `SELECT l.id, l.lead_date, l.tier, l.notes, l.notes_at, l.reached_out, l.feedback_at,
   l.sent_at, l.dismissed_at, l.dismiss_reason, l.outcome, l.outcome_at,
   c.uuid, c.name, c.domain, c.website, c.linkedin, c.dealroom_url, c.tagline, c.hq_city, c.hq_country, c.launch_year,
-  c.employees, c.employee_growth_1y, c.funding_total, c.funding_rounds, c.revenue, c.revenue_year, c.status, c.founders_json
+  c.employees, c.employee_growth_1y, c.funding_total, c.funding_rounds, c.revenue, c.revenue_year, c.status, c.founders_json,
+  c.ebitda, c.ebitda_year, c.profit, c.profit_year, c.industries_json
   FROM leads l JOIN companies c ON c.uuid = l.company_uuid`;
 
 // One status per lead, derived from the feedback columns:
@@ -53,9 +56,16 @@ export function leadStatus(row) {
 }
 
 function toLead(row) {
-  const { founders_json, ...lead } = row;
-  return { ...lead, status: leadStatus(row), reached_out: row.reached_out === null ? null : row.reached_out === 1, founders: founders_json ? JSON.parse(founders_json) : null };
+  const { founders_json, industries_json, ...lead } = row;
+  return { ...lead, status: leadStatus(row), reached_out: row.reached_out === null ? null : row.reached_out === 1,
+    founders: founders_json ? JSON.parse(founders_json) : null, industries: industries_json ? JSON.parse(industries_json) : null };
 }
+
+// The brief, as a ranking: filed positive EBITDA (cash-generative) first, then
+// no disclosed funding (not recently funded), then growing headcount, then
+// revenue on record. Within each, fastest headcount growth first.
+const LEAD_RANK = `COALESCE(ebitda > 0, 0) DESC, funding_total IS NULL DESC, COALESCE(employee_growth_1y > 0, 0) DESC,
+  revenue IS NOT NULL DESC, employee_growth_1y IS NULL, employee_growth_1y DESC, name`;
 
 // Today's leads. Tops up to 10 from companies never offered before, so a
 // company is never shown twice. Ranking is deliberately simple for now.
@@ -66,7 +76,7 @@ export async function leadsFor(db, date) {
     await db.prepare(`INSERT INTO leads (company_uuid, lead_date)
       SELECT uuid, ? FROM companies c WHERE NOT EXISTS (SELECT 1 FROM leads l WHERE l.company_uuid = c.uuid)
       AND (status IS NULL OR status = 'operational')
-      ORDER BY employee_growth_1y IS NULL, employee_growth_1y DESC, name LIMIT ?`).bind(date, missing).run();
+      ORDER BY ${LEAD_RANK} LIMIT ?`).bind(date, missing).run();
   }
   const { results } = await db.prepare(`${LEAD_SELECT} WHERE l.lead_date = ? ORDER BY l.id`).bind(date).all();
   return results.map(toLead);

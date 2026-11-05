@@ -10,19 +10,21 @@ Shared 40 for 40 context lives in `../AGENTS.md`.
 
 ## Layout
 
-- **`worker/`:** the `synergy-api` Cloudflare Worker. `dealroom.js` is the Dealroom client (token exchange, `GET /data/companies` with the filter DSL and cursor pages) and the company mapping. `sync.js` pulls up to 2 pages of 50 companies for the profile's filter, daily at 06:07 UTC. `store.js` holds the D1 queries and today's 10 leads. `index.js` serves `GET /health`, `GET|PUT /profile`, `GET /leads/today`, `GET /leads` (history: `status=all|new|waiting|call|closed|not_for_me`, `limit`, `before`) and `PATCH /leads/:id` (`sent`, `not_for_me` + `reason`, `outcome` = `call|rejected|no_reply`, `notes`, plus the original `reached_out` and `tier`). Each lead comes back with a `status`: `new`, `sent`, `call`, `rejected`, `no_reply` or `not_for_me`.
-- **`migrations/`:** the D1 schema: `companies` (typed columns plus `raw_json`, with NULL meaning unknown), `profile` (single row), `leads` (a company is only ever offered once; never deleted; `0003_feedback.sql` adds sent, not-for-me, outcome and notes dates) and `sync_runs`.
+- **`worker/`:** the `synergy-api` Cloudflare Worker. `dealroom.js` is the Dealroom client (token exchange, throttling and retries, `GET /data/companies` with the filter DSL and cursor pages, `/financials`) and the company mapping. `store.js` holds the D1 queries and today's 10 leads, ranked by filed positive EBITDA, then no disclosed funding, then headcount growth. `index.js` serves `GET /health`, `GET|PUT /profile`, `GET /leads/today`, `GET /leads` (history: `status=all|new|waiting|call|closed|not_for_me`, `limit`, `before`) and `PATCH /leads/:id` (`sent`, `not_for_me` + `reason`, `outcome` = `call|rejected|no_reply`, `notes`, plus the original `reached_out` and `tier`). Each lead comes back with a `status`: `new`, `sent`, `call`, `rejected`, `no_reply` or `not_for_me`. There is no cron: the Worker never calls Dealroom.
+- **`migrations/`:** the D1 schema: `companies` (typed columns, filed EBITDA and profit, plus `raw_json` and `financials_json`, with NULL meaning unknown), `profile` (single row), `leads` (a company is only ever offered once, created only by `/leads/today`, never deleted; `0003_feedback.sql` adds sent, not-for-me, outcome and notes dates), `sync_runs` (one row per pull) and `sync_state` (the pull's saved list cursor).
+- **`scripts/dealroom-pull.mjs`:** the one-off Dealroom pull, run locally with `npm run pull -- --remote --minutes 60`. It lists companies for its filter (default: UK, operational, launched by 2018, 10 to 1,000 people, about 30,000) 500 a page, then fetches financials, best fit first, until the time limit. D1 is the cache: the list resumes from `sync_state` and a company with `financials_fetched_at` is never fetched again. It writes only `companies`, `sync_state` and `sync_runs`, through `wrangler d1 execute` (`--local` by default). About 2 credits a listed company and 23 a financials call, at 4 requests a second.
 - **`extension/`:** a Manifest V3 Chrome extension. The toolbar button opens `dashboard.html`: today's 10, the "did you reach out?" buttons and the About you form. The API base defaults to `http://localhost:8787` and can be changed in the form.
-- **Companies House:** no separate source for now. Dealroom is believed to include Companies House filings, and `companies.raw_json` keeps the full record, so check which filing fields come back once there are credentials, then promote the useful ones to columns.
+- **Companies House:** no separate source. The company list returns no filing fields; filed revenue, EBITDA and profit by year come from `/financials`. Dealroom repeats the last filed figure in later years, so `ebitda_year` and `profit_year` are the first year of that repeated run.
 - **No auth yet.** The API is single-user and open; add sign-in before it holds anything private.
 
 ## Commands
 
 - Node.js 22.13 or later. `npm ci`, then `npm run db:migrate:local`.
-- `npm run dev` runs the Worker locally. `curl localhost:8787/__scheduled` triggers a Dealroom sync.
+- `npm run db:seed:ui` replaces local companies and leads with `test/fixtures/ui-companies.sql`: 10 real Dealroom companies with every column filled, including EBITDA, for checking the dashboard against the database. Local only.
+- `npm run dev` runs the Worker locally. `npm run pull -- --minutes 1` pulls from Dealroom into local D1; add `--remote` for Cloudflare, after `npm run db:migrate:remote`.
 - `npm test`, `npm run check` (tests plus a Wrangler dry run), `npm run extension:package` (ZIP into `dist/`; update its allowlist when the extension gains files).
 - Load the extension unpacked from `extension/` at `chrome://extensions`.
-- Run Wrangler as `npm run wrangler -- <args>` (the `40for40` profile). The D1 `database_id` in `wrangler.jsonc` is a placeholder until `npm run wrangler -- d1 create synergy` is run. CI never deploys.
+- Run Wrangler as `npm run wrangler -- <args>` (the `40for40` profile). The remote D1 database is `synergy` (created 5 November 2026). CI never deploys.
 
 ## The problem
 
