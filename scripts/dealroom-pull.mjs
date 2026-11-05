@@ -36,8 +36,8 @@ export function sqlLiteral(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
-export function upsertCompanySql(company, fetchedAt) {
-  const row = toCompanyRow(company, fetchedAt);
+export function upsertCompanySql(company, fetchedAt, currency = 'USD') {
+  const row = toCompanyRow(company, fetchedAt, currency);
   const build = () => `INSERT INTO companies (${COMPANY_COLUMNS.join(', ')}) VALUES (${COMPANY_COLUMNS.map(column => sqlLiteral(row[column])).join(', ')})
   ON CONFLICT(uuid) DO UPDATE SET ${COMPANY_COLUMNS.slice(1).map(column => `${column}=excluded.${column}`).join(', ')};`;
   let sql = build();
@@ -52,6 +52,29 @@ export function upsertCompanySql(company, fetchedAt) {
 
 export function financialsSql(uuid, financials) {
   return `UPDATE companies SET ${FINANCIAL_COLUMNS.map(column => `${column}=${sqlLiteral(financials[column])}`).join(', ')} WHERE uuid=${sqlLiteral(uuid)};`;
+}
+
+// Filed financials as fact rows, one per year, replacing what was stored.
+// A year whose figures repeat the year before is marked carried_forward.
+export function financialRowsSql(uuid, years, currency, fetchedAt) {
+  const fields = ['revenue', 'ebitda', 'profit'];
+  const known = value => (typeof value === 'number' && Number.isFinite(value) ? value : null);
+  const rows = [...years].sort((a, b) => a.year - b.year).filter(year => fields.some(field => known(year[field]) !== null));
+  return [`DELETE FROM company_financials WHERE company_uuid=${sqlLiteral(uuid)};`, ...rows.map((year, i) => {
+    const before = rows[i - 1];
+    const carried = before && before.year === year.year - 1 && fields.every(field => known(before[field]) === known(year[field]));
+    return `INSERT INTO company_financials (company_uuid, year, currency, revenue, ebitda, profit, carried_forward, fetched_at) VALUES (${
+      [uuid, year.year, currency, known(year.revenue), known(year.ebitda), known(year.profit), carried ? 1 : 0, fetchedAt].map(sqlLiteral).join(', ')});`;
+  })];
+}
+
+// Every disclosed round as fact rows, replacing what was stored.
+export function roundsSql(uuid, rounds, currency, fetchedAt) {
+  return [`DELETE FROM funding_rounds WHERE company_uuid=${sqlLiteral(uuid)};`, ...rounds.filter(round => Number.isInteger(round.id)).map(round =>
+    `INSERT OR REPLACE INTO funding_rounds (id, company_uuid, announced_date, round_type, standardized_round, amount, currency, is_exit, is_vc_round, fetched_at) VALUES (${
+      [round.id, uuid, round.announced_date ?? null, round.round_type ?? null, round.standardized_round ?? null, round.amount ?? null, currency,
+        typeof round.is_exit === 'boolean' ? round.is_exit : null, typeof round.is_vc_round === 'boolean' ? round.is_vc_round : null, fetchedAt].map(sqlLiteral).join(', ')});`),
+  `UPDATE companies SET rounds_fetched_at=${sqlLiteral(fetchedAt)} WHERE uuid=${sqlLiteral(uuid)};`];
 }
 
 const stateSql = ({ filter, sort, cursor, done }, now) => `INSERT INTO sync_state (id, filter, sort, next_cursor, done, updated_at)
@@ -174,7 +197,8 @@ export async function pull({ client, d1, filter = DEFAULT_FILTER, sort = DEFAULT
           const company = queue.shift();
           try {
             const { years } = await client.getFinancials(company.uuid);
-            await out.add(financialsSql(company.uuid, toFinancials(years, new Date(now()).toISOString())));
+            const at = new Date(now()).toISOString();
+            await out.add(financialsSql(company.uuid, toFinancials(years, at)), ...financialRowsSql(company.uuid, years, 'USD', at));
             stats.financials++;
           } catch (error) {
             if (error instanceof DealroomError && error.status === 404) {

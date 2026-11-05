@@ -1,4 +1,5 @@
 import { HISTORY_FILTERS, getProfile, leadHistory, leadsFor, saveProfile, updateLead } from './store.js';
+import { listVcLeads } from './vcs.js';
 
 // MVP is single-user with no sign-in. Anyone with the URL can read and write;
 // add auth before this holds anything private.
@@ -39,6 +40,11 @@ export default {
         if (!body || typeof body !== 'object') return error('invalid_json', 'Send a JSON object.', 400);
         return json(await saveProfile(env.DB, body));
       }
+    }
+
+    if (pathname === '/vcs' && method === 'GET') {
+      const { criteria } = await getProfile(env.DB);
+      return json({ criteria, vcs: await listVcLeads(env.DB, criteria) });
     }
 
     if (pathname === '/leads/today' && method === 'GET') {
