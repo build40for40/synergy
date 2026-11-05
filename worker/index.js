@@ -1,5 +1,6 @@
 import { HISTORY_FILTERS, getProfile, leadHistory, leadsFor, saveProfile, updateLead } from './store.js';
 import { listVcLeads } from './vcs.js';
+import { VC_HISTORY_FILTERS, updateVcLead, vcLeadHistory, vcLeadsToday } from './vc-leads.js';
 
 // MVP is single-user with no sign-in. Anyone with the URL can read and write;
 // add auth before this holds anything private.
@@ -45,6 +46,29 @@ export default {
     if (pathname === '/vcs' && method === 'GET') {
       const { criteria } = await getProfile(env.DB);
       return json({ criteria, vcs: await listVcLeads(env.DB, criteria) });
+    }
+
+    // The side panel's list: today's 5 or 10 VC leads, what's in play and the streak.
+    if (pathname === '/vcs/today' && method === 'GET') {
+      const { criteria, leads_per_day } = await getProfile(env.DB);
+      return json(await vcLeadsToday(env.DB, criteria, { perDay: leads_per_day, date: today() }));
+    }
+
+    // History of VC leads: GET /vcs/history?status=all|waiting|call|closed|not_for_me
+    if (pathname === '/vcs/history' && method === 'GET') {
+      const status = new URL(request.url).searchParams.get('status') ?? 'all';
+      if (!(status in VC_HISTORY_FILTERS)) return error('invalid_status', `status must be one of ${Object.keys(VC_HISTORY_FILTERS).join(', ')}.`, 400);
+      const { criteria } = await getProfile(env.DB);
+      return json(await vcLeadHistory(env.DB, criteria, { status }));
+    }
+
+    // Feedback on one VC lead: sent, not_for_me + reason, outcome, notes, contact_name, contact_email.
+    const vcMatch = pathname.match(/^\/vcs\/([0-9a-f-]{36})$/);
+    if (vcMatch && method === 'PATCH') {
+      const body = await readJson(request);
+      if (!body || typeof body !== 'object' || Array.isArray(body)) return error('invalid_json', 'Send a JSON object.', 400);
+      const result = await updateVcLead(env.DB, vcMatch[1], body);
+      return result.error ? error(result.error.code, result.error.message, result.error.status) : json(result.lead);
     }
 
     if (pathname === '/leads/today' && method === 'GET') {

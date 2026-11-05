@@ -20,8 +20,8 @@ export function upsertCompanies(db, companies, fetchedAt = new Date().toISOStrin
 
 // `criteria` is always complete: the user's saved rules over the defaults.
 export async function getProfile(db) {
-  const row = await db.prepare('SELECT who, offer, looking_for, dealroom_filter, dealroom_sort, criteria_json, updated_at FROM profile WHERE id = 1').first()
-    ?? { who: '', offer: '', looking_for: '', dealroom_filter: null, dealroom_sort: null, criteria_json: null, updated_at: null };
+  const row = await db.prepare('SELECT who, offer, looking_for, dealroom_filter, dealroom_sort, criteria_json, leads_per_day, updated_at FROM profile WHERE id = 1').first()
+    ?? { who: '', offer: '', looking_for: '', dealroom_filter: null, dealroom_sort: null, criteria_json: null, leads_per_day: 10, updated_at: null };
   const { criteria_json, ...profile } = row;
   return { ...profile, criteria: normalizeCriteria(criteria_json ? JSON.parse(criteria_json) : null) };
 }
@@ -40,11 +40,15 @@ export async function saveProfile(db, input, now = new Date().toISOString()) {
   const existing = (await db.prepare('SELECT criteria_json FROM profile WHERE id = 1').first())?.criteria_json ?? null;
   const criteria = input.criteria && typeof input.criteria === 'object'
     ? normalizeCriteria(input.criteria) : normalizeCriteria(existing ? JSON.parse(existing) : null);
-  await db.prepare(`INSERT INTO profile (id, who, offer, looking_for, dealroom_filter, dealroom_sort, criteria_json, updated_at) VALUES (1, ?, ?, ?, ?, ?, ?, ?)
+  // 5 or 10 leads a day; kept unless the input sends a valid value.
+  const existingPerDay = (await db.prepare('SELECT leads_per_day FROM profile WHERE id = 1').first())?.leads_per_day ?? 10;
+  const leadsPerDay = [5, 10].includes(input.leads_per_day) ? input.leads_per_day : existingPerDay;
+  await db.prepare(`INSERT INTO profile (id, who, offer, looking_for, dealroom_filter, dealroom_sort, criteria_json, leads_per_day, updated_at) VALUES (1, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(id) DO UPDATE SET who=excluded.who, offer=excluded.offer, looking_for=excluded.looking_for,
-    dealroom_filter=excluded.dealroom_filter, dealroom_sort=excluded.dealroom_sort, criteria_json=excluded.criteria_json, updated_at=excluded.updated_at`)
-    .bind(profile.who, profile.offer, profile.looking_for, profile.dealroom_filter, profile.dealroom_sort, JSON.stringify(criteria), now).run();
-  return { ...profile, criteria, updated_at: now };
+    dealroom_filter=excluded.dealroom_filter, dealroom_sort=excluded.dealroom_sort, criteria_json=excluded.criteria_json,
+    leads_per_day=excluded.leads_per_day, updated_at=excluded.updated_at`)
+    .bind(profile.who, profile.offer, profile.looking_for, profile.dealroom_filter, profile.dealroom_sort, JSON.stringify(criteria), leadsPerDay, now).run();
+  return { ...profile, criteria, leads_per_day: leadsPerDay, updated_at: now };
 }
 
 const LEAD_SELECT = `SELECT l.id, l.lead_date, l.tier, l.notes, l.notes_at, l.reached_out, l.feedback_at,
