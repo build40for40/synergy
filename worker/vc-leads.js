@@ -1,6 +1,7 @@
 // The side panel's daily list of VC leads, the user's feedback on them, their
 // history and the streak. VC data (partners, matching companies) comes from
-// listVcLeads; this module adds what the user did with each VC.
+// listVcLeads; this module adds what the user did with each VC. Every row
+// belongs to one signed-in user (worker/auth.js); VC data stays shared.
 import { listVcLeads } from './vcs.js';
 
 export const OUTCOMES = ['call', 'rejected', 'no_reply'];
@@ -55,8 +56,8 @@ export function streakFrom(days, today) {
   return { current, best: Math.max(best, current), today_done: done.has(today) };
 }
 
-async function feedbackRows(db) {
-  const { results } = await db.prepare(`SELECT l.investor_uuid, ${FEEDBACK} FROM vc_leads l`).all();
+async function feedbackRows(db, userId) {
+  const { results } = await db.prepare(`SELECT l.investor_uuid, ${FEEDBACK} FROM vc_leads l WHERE l.user_id = ?`).bind(userId).all();
   return new Map(results.map(row => [row.investor_uuid, row]));
 }
 
@@ -75,10 +76,10 @@ function present(vc, row) {
 
 // Today's list. Unsent leads from earlier days come first (oldest first), then
 // anything handled today, then new VCs to fill up to `perDay`.
-export async function vcLeadsToday(db, criteria, { perDay = 10, date, now = new Date() } = {}) {
+export async function vcLeadsToday(db, userId, criteria, { perDay = 10, date, now = new Date() } = {}) {
   const vcs = await listVcLeads(db, criteria, now);
   const byUuid = new Map(vcs.map(vc => [vc.uuid, vc]));
-  const rows = await feedbackRows(db);
+  const rows = await feedbackRows(db, userId);
   const isNew = row => !row.sent_at && !row.dismissed_at;
   const handledToday = row => day(row.sent_at) === date || day(row.dismissed_at) === date;
 
@@ -91,15 +92,15 @@ export async function vcLeadsToday(db, criteria, { perDay = 10, date, now = new 
   if (list.length < perDay) {
     const fresh = vcs.filter(vc => !rows.has(vc.uuid)).slice(0, perDay - list.length);
     if (fresh.length) {
-      await db.batch(fresh.map(vc => db.prepare('INSERT OR IGNORE INTO vc_leads (investor_uuid, first_shown) VALUES (?, ?)').bind(vc.uuid, date)));
-      const added = await feedbackRows(db);
+      await db.batch(fresh.map(vc => db.prepare('INSERT OR IGNORE INTO vc_leads (user_id, investor_uuid, first_shown) VALUES (?, ?, ?)').bind(userId, vc.uuid, date)));
+      const added = await feedbackRows(db, userId);
       list = [...list, ...fresh.map(vc => added.get(vc.uuid))];
     }
   }
 
   const leads = list.map(row => ({ ...present(byUuid.get(row.investor_uuid), row), carried_from: row.first_shown < date ? row.first_shown : null }));
   if (leads.length && leads.every(lead => lead.sent_at || lead.dismissed_at) && !isWeekend(date)) {
-    await db.prepare('INSERT OR IGNORE INTO streak_days (day) VALUES (?)').bind(date).run();
+    await db.prepare('INSERT OR IGNORE INTO streak_days (user_id, day) VALUES (?, ?)').bind(userId, date).run();
   }
 
   // In play: sent on an earlier day, newest first. Rejected and no-reply stay
@@ -112,7 +113,7 @@ export async function vcLeadsToday(db, criteria, { perDay = 10, date, now = new 
   const vcFor = row => byUuid.get(row.investor_uuid) ?? basics.get(row.investor_uuid);
   const in_play = playRows.filter(vcFor).map(row => present(vcFor(row), row));
 
-  const { results: streakRows } = await db.prepare('SELECT day FROM streak_days').all();
+  const { results: streakRows } = await db.prepare('SELECT day FROM streak_days WHERE user_id = ?').bind(userId).all();
   return { date, leads_per_day: perDay, leads, in_play, streak: streakFrom(streakRows.map(r => r.day), date), pool_empty: leads.length < perDay };
 }
 
@@ -120,8 +121,8 @@ export async function vcLeadsToday(db, criteria, { perDay = 10, date, now = new 
 //   sent, not_for_me (+ reason), outcome ('call' | 'rejected' | 'no_reply' | null),
 //   notes, contact_name, contact_email (null clears an edit, back to Dealroom's).
 // Returns { lead } or { error: { code, message, status } }.
-export async function updateVcLead(db, uuid, input, now = new Date().toISOString()) {
-  const current = await db.prepare('SELECT investor_uuid, sent_at, dismissed_at, outcome FROM vc_leads WHERE investor_uuid = ?').bind(uuid).first();
+export async function updateVcLead(db, userId, uuid, input, now = new Date().toISOString()) {
+  const current = await db.prepare('SELECT investor_uuid, sent_at, dismissed_at, outcome FROM vc_leads WHERE investor_uuid = ? AND user_id = ?').bind(uuid, userId).first();
   if (!current) return { error: { code: 'not_found', message: 'That VC is not in your leads.', status: 404 } };
   if ('outcome' in input && input.outcome !== null && !OUTCOMES.includes(input.outcome)) {
     return { error: { code: 'invalid_outcome', message: `outcome must be one of ${OUTCOMES.join(', ')}, or null.`, status: 400 } };
@@ -168,8 +169,8 @@ export async function updateVcLead(db, uuid, input, now = new Date().toISOString
   contact('contact_name', 200);
   contact('contact_email', 320);
 
-  if (set.length) await db.prepare(`UPDATE vc_leads SET ${set.join(', ')} WHERE investor_uuid = ?`).bind(...values, uuid).run();
-  const row = await db.prepare(`SELECT l.investor_uuid, ${FEEDBACK} FROM vc_leads l WHERE l.investor_uuid = ?`).bind(uuid).first();
+  if (set.length) await db.prepare(`UPDATE vc_leads SET ${set.join(', ')} WHERE investor_uuid = ? AND user_id = ?`).bind(...values, uuid, userId).run();
+  const row = await db.prepare(`SELECT l.investor_uuid, ${FEEDBACK} FROM vc_leads l WHERE l.investor_uuid = ? AND l.user_id = ?`).bind(uuid, userId).first();
   return { lead: { uuid, status: vcStatus(row), ...row, investor_uuid: undefined } };
 }
 
@@ -182,8 +183,8 @@ export const VC_HISTORY_FILTERS = {
 };
 
 // Every VC ever shown, most recent activity first, with counts per filter.
-export async function vcLeadHistory(db, criteria, { status = 'all', now = new Date() } = {}) {
-  const rows = [...(await feedbackRows(db)).values()];
+export async function vcLeadHistory(db, userId, criteria, { status = 'all', now = new Date() } = {}) {
+  const rows = [...(await feedbackRows(db, userId)).values()];
   const counts = Object.fromEntries(Object.entries(VC_HISTORY_FILTERS).map(([key, keep]) => [key, rows.filter(keep).length]));
   const latest = row => [row.outcome_at, row.sent_at, row.dismissed_at, row.first_shown].filter(Boolean).sort().at(-1);
   const picked = rows.filter(VC_HISTORY_FILTERS[status]).sort((a, b) => latest(b).localeCompare(latest(a)));

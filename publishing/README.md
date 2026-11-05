@@ -56,7 +56,10 @@ Later versions: bump `version` in `extension/manifest.json`, build, upload to th
 
 The packaging is ready. The product behind it isn't yet:
 
-1. **No sign-in.** The API is open: anyone with the address can read and change the profile and leads. Don't submit, or send the direct download, until the API checks who's calling. The prototype on card 166 assumes Google sign-in.
+1. **Sign-in is built but not switched on in WorkOS.** The API now requires a WorkOS token (see `AGENTS.md`). Before it works:
+   - Add `https://bfmnffoaomaehgekimbdkohpnoidpegd.chromiumapp.org/` as a redirect URI in the **staging** WorkOS environment, for the unpacked extension.
+   - After the first store upload, add `https://<store item id>.chromiumapp.org/` in **production**.
+   - Give the store reviewer a test account (an email and password in the submission's test instructions), with sample leads, never the client's.
 2. **The live API isn't running.** The D1 `database_id` is still a placeholder, and the Dealroom key has no API access yet (card 172). The store build points at a Worker that isn't deployed.
 3. **No privacy policy for Synergy.** Unlike the Naughty List, this stores personal data on our server (the user's name, firm and pitch, plus their notes and outcomes on each lead). Add a Synergy section to https://build40for40.com/privacy/ (site repo) before submitting. Draft facts are in `privacy.md`.
 4. **Screenshots.** Take them from the installed extension once the dashboard follows the card 166 prototype. The current dashboard still shows founder-company leads.

@@ -138,3 +138,12 @@ textarea { resize: vertical; }
 .filters button[aria-pressed="true"] { border-color: var(--action); color: var(--text); }
 details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
 .saved { color: var(--s-call); font-size: 12px; }
+
+/* Sign-in */
+.signed-out { display: grid; gap: 12px; padding: 24px 4px; }
+.signed-out h2 { margin: 0; }
+.signed-out p { margin: 0; }
+.signed-out .error { color: var(--s-rej, #c0392b); }
+.account { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; font-size: 12px; margin: 0 0 12px; }
+.account b { overflow-wrap: anywhere; }
+.nav[hidden] { display: none; }

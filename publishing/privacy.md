@@ -4,8 +4,9 @@ An inventory for writing the Synergy section of https://build40for40.com/privacy
 
 ## What the extension does on the device
 
-- Asks for `storage`, `sidePanel` and one host permission: the Synergy service. It doesn't read the pages the user visits, run on other sites, or ask for `tabs`, cookies or history.
-- Stores one value locally: the address of the Synergy service (`api` in `chrome.storage.local`).
+- Asks for `storage`, `sidePanel`, `identity` and two host permissions: the Synergy service and WorkOS (`api.workos.com`, for sign-in). It doesn't read the pages the user visits, run on other sites, or ask for `tabs`, cookies or history.
+- Stores locally, in `chrome.storage.local`: the address of the Synergy service (`api`) and the sign-in session (`session`: WorkOS access and refresh tokens, plus the user's id, email and first name to show who's signed in). Signing out deletes the session.
+- Sign-in goes through WorkOS (AuthKit). The Synergy service sees only the WorkOS user id inside the signed token, and stores neither the email nor the name.
 - No analytics or tracking code in the extension.
 
 ## What it sends to the Synergy service (Cloudflare Worker + D1)
