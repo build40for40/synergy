@@ -1,6 +1,7 @@
 -- Sign-in (WorkOS): anyone can sign in, and each user gets their own profile, leads,
 -- feedback and notes. user_id is the WorkOS user id from the signed access token.
--- Companies, investors and the Dealroom pull stay shared.
+-- Companies, investors and the Dealroom pull stay shared. Each user's matching
+-- criteria (criteria_json, from 0004) move with their profile.
 --
 -- Rows from before sign-in belong to user_id 'unclaimed', which no token can carry,
 -- so they're kept but nobody sees them.
@@ -12,10 +13,11 @@ CREATE TABLE profiles (
   looking_for TEXT NOT NULL DEFAULT '',
   dealroom_filter TEXT,
   dealroom_sort TEXT,
+  criteria_json TEXT,
   updated_at TEXT NOT NULL
 );
-INSERT INTO profiles (user_id, who, offer, looking_for, dealroom_filter, dealroom_sort, updated_at)
-  SELECT 'unclaimed', who, offer, looking_for, dealroom_filter, dealroom_sort, updated_at FROM profile;
+INSERT INTO profiles (user_id, who, offer, looking_for, dealroom_filter, dealroom_sort, criteria_json, updated_at)
+  SELECT 'unclaimed', who, offer, looking_for, dealroom_filter, dealroom_sort, criteria_json, updated_at FROM profile;
 
 -- leads.company_uuid was unique across everyone. Each user now gets each company once,
 -- so the table is rebuilt with UNIQUE (user_id, company_uuid). Same columns as 0001 + 0003.

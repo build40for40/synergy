@@ -28,18 +28,19 @@ async function call(path, options = {}) {
   return body;
 }
 
-const money = value => new Intl.NumberFormat('en-GB', { style: 'currency', currency: 'USD', notation: 'compact' }).format(value);
+const money = (value, currency = 'USD') => new Intl.NumberFormat('en-GB', { style: 'currency', currency, notation: 'compact' }).format(value);
 const percent = value => `${value > 0 ? '+' : ''}${Math.round(value)}%`;
 
 // Every fact is shown, known or not: gaps in the data are part of the lead.
 function facts(lead) {
+  const cash = value => money(value, lead.currency || 'USD');
   return [
     ['Founded', lead.launch_year],
     ['Employees', lead.employees],
     ['Headcount, 1 year', lead.employee_growth_1y, percent],
-    ['Total funding', lead.funding_total, money],
-    ['Revenue', lead.revenue, value => `${money(value)}${lead.revenue_year ? ` (${lead.revenue_year})` : ''}`],
-    ['EBITDA', lead.ebitda, value => `${money(value)}${lead.ebitda_year ? ` (${lead.ebitda_year})` : ''}`],
+    ['Total funding', lead.funding_total, cash],
+    ['Revenue', lead.revenue, value => `${cash(value)}${lead.revenue_year ? ` (${lead.revenue_year})` : ''}`],
+    ['EBITDA', lead.ebitda, value => `${cash(value)}${lead.ebitda_year ? ` (${lead.ebitda_year})` : ''}`],
     ['Founders', lead.founders?.length ? lead.founders.map(f => f.name).join(', ') : null]
   ];
 }

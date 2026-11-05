@@ -24,7 +24,7 @@ const RETRYABLE = new Set([429, 500, 502, 503, 504]);
 // key). 429s and 5xx responses are retried up to `retries` times, waiting for
 // Retry-After (capped at `maxWaitMs`) or a doubling backoff.
 export function createDealroomClient({ clientId, clientSecret, fetch: fetchImpl = fetch, now = Date.now,
-  requestsPerSecond = Infinity, retries = 0, maxWaitMs = 30_000, sleep = ms => new Promise(resolve => setTimeout(resolve, ms)) }) {
+  requestsPerSecond = Infinity, retries = 0, maxWaitMs = 30_000, sleep = ms => new Promise(resolve => setTimeout(resolve, ms)), currency = null }) {
   if (!clientId || !clientSecret) throw new Error('Set DEALROOM_CLIENT_ID and DEALROOM_API_KEY.');
   let token = null;
   let tokenExpiresAt = 0;
@@ -71,7 +71,8 @@ export function createDealroomClient({ clientId, clientSecret, fetch: fetchImpl 
 
   async function requestOnce(path, params) {
     const url = new URL(path, API_BASE);
-    for (const [key, value] of Object.entries(params)) {
+    // `currency` converts every monetary field and filter, e.g. GBP.
+    for (const [key, value] of Object.entries({ ...(currency && { currency }), ...params })) {
       if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
     }
     await throttle();
@@ -107,6 +108,8 @@ export function createDealroomClient({ clientId, clientSecret, fetch: fetchImpl 
       const { body, credits } = await request(`/data/companies/${encodeURIComponent(uuid)}/financials`);
       return { years: body.data ?? [], credits };
     },
+    // Any GET under the API, e.g. get('/data/investors', { filter }). Returns the body and its credits.
+    get: (path, params) => request(path, params),
     // Credits reported by X-Credits-Used across every request so far.
     creditsUsed: () => credits,
     async getCompany(uuid) {
@@ -120,7 +123,7 @@ const numberOrNull = value => (typeof value === 'number' && Number.isFinite(valu
 
 // Flatten a Dealroom Company object into a `companies` row. Missing data stays
 // null so the dashboard can show what is known and what isn't.
-export function toCompanyRow(company, fetchedAt = new Date().toISOString()) {
+export function toCompanyRow(company, fetchedAt = new Date().toISOString(), currency = 'USD') {
   const hq = company.locations?.find(location => location.role === 'hq') ?? null;
   const launchYear = Number.parseInt(String(company.launch_date ?? '').slice(0, 4), 10);
   // No founders listed means Dealroom doesn't know them, so store NULL rather than [].
@@ -154,6 +157,7 @@ export function toCompanyRow(company, fetchedAt = new Date().toISOString()) {
     is_hiring: typeof company.jobs?.is_hiring === 'boolean' ? (company.jobs.is_hiring ? 1 : 0) : null,
     open_jobs: numberOrNull(company.jobs?.open_count),
     valuation: numberOrNull(company.valuation?.value),
+    currency,
     raw_json: JSON.stringify(company),
     fetched_at: fetchedAt
   };

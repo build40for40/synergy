@@ -1,5 +1,6 @@
 import { requireUser } from './auth.js';
 import { HISTORY_FILTERS, getProfile, leadHistory, leadsFor, saveProfile, updateLead } from './store.js';
+import { listVcLeads } from './vcs.js';
 
 // Every route except /health needs a WorkOS access token (worker/auth.js). Anyone can
 // sign in, and each user only ever sees their own profile, leads and feedback.
@@ -45,6 +46,11 @@ export async function handle(request, env, auth = {}) {
         if (!body || typeof body !== 'object') return error('invalid_json', 'Send a JSON object.', 400);
         return json(await saveProfile(env.DB, userId, body));
       }
+    }
+
+    if (pathname === '/vcs' && method === 'GET') {
+      const { criteria } = await getProfile(env.DB, userId);
+      return json({ criteria, vcs: await listVcLeads(env.DB, criteria) });
     }
 
     if (pathname === '/leads/today' && method === 'GET') {

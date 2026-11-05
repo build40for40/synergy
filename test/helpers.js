@@ -7,6 +7,7 @@ export function database() {
   const dir = new URL('../migrations/', import.meta.url);
   for (const file of readdirSync(dir).filter(name => name.endsWith('.sql')).sort()) sqlite.exec(readFileSync(new URL(file, dir), 'utf8'));
   const db = {
+    raw: sqlite,
     prepare(sql) {
       let values = [];
       const statement = {

@@ -1,10 +1,11 @@
+import { normalizeCriteria } from './criteria.js';
 import { toCompanyRow } from './dealroom.js';
 
 export const LEADS_PER_DAY = 10;
 export const COMPANY_COLUMNS = ['uuid', 'name', 'domain', 'website', 'linkedin', 'dealroom_url', 'tagline', 'hq_city', 'hq_country',
   'launch_year', 'employees', 'employee_growth_1y', 'funding_total', 'funding_rounds', 'revenue', 'revenue_year', 'status',
   'founders_json', 'about', 'industries_json', 'classifications_json', 'signal_rating', 'monthly_visits', 'is_hiring', 'open_jobs',
-  'valuation', 'raw_json', 'fetched_at'];
+  'valuation', 'currency', 'raw_json', 'fetched_at'];
 export const FINANCIAL_COLUMNS = ['ebitda', 'ebitda_year', 'profit', 'profit_year', 'financials_json', 'financials_fetched_at'];
 export const UPSERT_COMPANY = `INSERT INTO companies (${COMPANY_COLUMNS.join(', ')}) VALUES (${COMPANY_COLUMNS.map(() => '?').join(', ')})
   ON CONFLICT(uuid) DO UPDATE SET ${COMPANY_COLUMNS.slice(1).map(column => `${column}=excluded.${column}`).join(', ')}`;
@@ -19,9 +20,12 @@ export function upsertCompanies(db, companies, fetchedAt = new Date().toISOStrin
 
 // Every lead, profile and piece of feedback belongs to one signed-in user (the WorkOS user id
 // from worker/auth.js). Companies, investors and the Dealroom pull are shared.
+// `criteria` is always complete: the user's saved rules over the defaults.
 export async function getProfile(db, userId) {
-  return await db.prepare('SELECT who, offer, looking_for, dealroom_filter, dealroom_sort, updated_at FROM profiles WHERE user_id = ?').bind(userId).first()
-    ?? { who: '', offer: '', looking_for: '', dealroom_filter: null, dealroom_sort: null, updated_at: null };
+  const row = await db.prepare('SELECT who, offer, looking_for, dealroom_filter, dealroom_sort, criteria_json, updated_at FROM profiles WHERE user_id = ?').bind(userId).first()
+    ?? { who: '', offer: '', looking_for: '', dealroom_filter: null, dealroom_sort: null, criteria_json: null, updated_at: null };
+  const { criteria_json, ...profile } = row;
+  return { ...profile, criteria: normalizeCriteria(criteria_json ? JSON.parse(criteria_json) : null) };
 }
 
 export async function saveProfile(db, userId, input, now = new Date().toISOString()) {
@@ -34,18 +38,22 @@ export async function saveProfile(db, userId, input, now = new Date().toISOStrin
     dealroom_filter: optional(input.dealroom_filter, 2000),
     dealroom_sort: optional(input.dealroom_sort, 200)
   };
-  await db.prepare(`INSERT INTO profiles (user_id, who, offer, looking_for, dealroom_filter, dealroom_sort, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+  // Criteria are kept unless the input sends them; unknown or invalid keys are dropped.
+  const existing = (await db.prepare('SELECT criteria_json FROM profiles WHERE user_id = ?').bind(userId).first())?.criteria_json ?? null;
+  const criteria = input.criteria && typeof input.criteria === 'object'
+    ? normalizeCriteria(input.criteria) : normalizeCriteria(existing ? JSON.parse(existing) : null);
+  await db.prepare(`INSERT INTO profiles (user_id, who, offer, looking_for, dealroom_filter, dealroom_sort, criteria_json, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(user_id) DO UPDATE SET who=excluded.who, offer=excluded.offer, looking_for=excluded.looking_for,
-    dealroom_filter=excluded.dealroom_filter, dealroom_sort=excluded.dealroom_sort, updated_at=excluded.updated_at`)
-    .bind(userId, profile.who, profile.offer, profile.looking_for, profile.dealroom_filter, profile.dealroom_sort, now).run();
-  return { ...profile, updated_at: now };
+    dealroom_filter=excluded.dealroom_filter, dealroom_sort=excluded.dealroom_sort, criteria_json=excluded.criteria_json, updated_at=excluded.updated_at`)
+    .bind(userId, profile.who, profile.offer, profile.looking_for, profile.dealroom_filter, profile.dealroom_sort, JSON.stringify(criteria), now).run();
+  return { ...profile, criteria, updated_at: now };
 }
 
 const LEAD_SELECT = `SELECT l.id, l.lead_date, l.tier, l.notes, l.notes_at, l.reached_out, l.feedback_at,
   l.sent_at, l.dismissed_at, l.dismiss_reason, l.outcome, l.outcome_at,
   c.uuid, c.name, c.domain, c.website, c.linkedin, c.dealroom_url, c.tagline, c.hq_city, c.hq_country, c.launch_year,
   c.employees, c.employee_growth_1y, c.funding_total, c.funding_rounds, c.revenue, c.revenue_year, c.status, c.founders_json,
-  c.ebitda, c.ebitda_year, c.profit, c.profit_year, c.industries_json
+  c.ebitda, c.ebitda_year, c.profit, c.profit_year, c.industries_json, c.currency
   FROM leads l JOIN companies c ON c.uuid = l.company_uuid`;
 
 // One status per lead, derived from the feedback columns:
