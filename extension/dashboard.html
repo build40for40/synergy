@@ -10,8 +10,18 @@
   <header>
     <h1>Synergy</h1>
     <p id="progress" aria-live="polite"></p>
+    <div id="account" hidden>
+      <span id="account-email"></span>
+      <button type="button" id="sign-out">Sign out</button>
+    </div>
   </header>
-  <main>
+  <section id="signed-out" hidden aria-labelledby="signed-out-heading">
+    <h2 id="signed-out-heading">Sign in to see your leads</h2>
+    <p>Your leads, notes and replies are saved to your account.</p>
+    <button type="button" id="sign-in">Sign in</button>
+    <p id="sign-in-error" role="alert"></p>
+  </section>
+  <main id="signed-in" hidden>
     <section aria-labelledby="leads-heading">
       <h2 id="leads-heading">Today's 10</h2>
       <p id="status" role="status"></p>

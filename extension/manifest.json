@@ -2,6 +2,7 @@
   "manifest_version": 3,
   "name": "Synergy",
   "version": "0.1.0",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAtdMpcnpXKN/9ZSYpYXlYax07E/IxObswopdv/RHvy1bZyNMbBxvXmxisGvanZ5qWjyrJhHBaMpXVAvoxfYtXTXfA+uOuhhVSOrkPRlY+abcWpG/zFSgVkuZ8PVOd8MMxMZCpkNsv2EUf5Y3tBLI6/qE/wIS/6L9RcJHuvPnCcZezsgCJhOynHNFmdfXRdfQlIeFNDVH+STcehcUWFFXL1BHvcxbynUv+wE6JSGniwHLKNRHipBbVeH+Pryth6KImvYLcozyhkzfKtWdrO8Qw5oRNa0w0wQK5e7tK34b0Uai4eKchO5dkYHzw1c0G+GVJkq5thx7S4dWRgLC3MixuCQIDAQAB",
   "description": "A few VCs a day whose portfolio companies are ready for an exit, with the reasons why and a prompt for the first email.",
   "author": "40 for 40",
   "homepage_url": "https://build40for40.com/synergy/",
@@ -14,11 +15,13 @@
   },
   "permissions": [
     "storage",
-    "sidePanel"
+    "sidePanel",
+    "identity"
   ],
   "host_permissions": [
     "http://localhost:8787/*",
-    "https://synergy-api.40for40.workers.dev/*"
+    "https://synergy-api.40for40.workers.dev/*",
+    "https://api.workos.com/*"
   ],
   "background": {
     "service_worker": "background.js"

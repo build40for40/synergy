@@ -17,12 +17,14 @@ export function upsertCompanies(db, companies, fetchedAt = new Date().toISOStrin
   }));
 }
 
-export async function getProfile(db) {
-  return await db.prepare('SELECT who, offer, looking_for, dealroom_filter, dealroom_sort, updated_at FROM profile WHERE id = 1').first()
+// Every lead, profile and piece of feedback belongs to one signed-in user (the WorkOS user id
+// from worker/auth.js). Companies, investors and the Dealroom pull are shared.
+export async function getProfile(db, userId) {
+  return await db.prepare('SELECT who, offer, looking_for, dealroom_filter, dealroom_sort, updated_at FROM profiles WHERE user_id = ?').bind(userId).first()
     ?? { who: '', offer: '', looking_for: '', dealroom_filter: null, dealroom_sort: null, updated_at: null };
 }
 
-export async function saveProfile(db, input, now = new Date().toISOString()) {
+export async function saveProfile(db, userId, input, now = new Date().toISOString()) {
   const text = (value, max) => (typeof value === 'string' ? value.trim().slice(0, max) : '');
   const optional = (value, max) => text(value, max) || null;
   const profile = {
@@ -32,10 +34,10 @@ export async function saveProfile(db, input, now = new Date().toISOString()) {
     dealroom_filter: optional(input.dealroom_filter, 2000),
     dealroom_sort: optional(input.dealroom_sort, 200)
   };
-  await db.prepare(`INSERT INTO profile (id, who, offer, looking_for, dealroom_filter, dealroom_sort, updated_at) VALUES (1, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET who=excluded.who, offer=excluded.offer, looking_for=excluded.looking_for,
+  await db.prepare(`INSERT INTO profiles (user_id, who, offer, looking_for, dealroom_filter, dealroom_sort, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(user_id) DO UPDATE SET who=excluded.who, offer=excluded.offer, looking_for=excluded.looking_for,
     dealroom_filter=excluded.dealroom_filter, dealroom_sort=excluded.dealroom_sort, updated_at=excluded.updated_at`)
-    .bind(profile.who, profile.offer, profile.looking_for, profile.dealroom_filter, profile.dealroom_sort, now).run();
+    .bind(userId, profile.who, profile.offer, profile.looking_for, profile.dealroom_filter, profile.dealroom_sort, now).run();
   return { ...profile, updated_at: now };
 }
 
@@ -67,18 +69,18 @@ function toLead(row) {
 const LEAD_RANK = `COALESCE(ebitda > 0, 0) DESC, funding_total IS NULL DESC, COALESCE(employee_growth_1y > 0, 0) DESC,
   revenue IS NOT NULL DESC, employee_growth_1y IS NULL, employee_growth_1y DESC, name`;
 
-// Today's leads. Tops up to 10 from companies never offered before, so a
-// company is never shown twice. Ranking is deliberately simple for now.
-export async function leadsFor(db, date) {
-  const existing = await db.prepare('SELECT COUNT(*) AS n FROM leads WHERE lead_date = ?').bind(date).first();
+// Today's leads for one user. Tops up to 10 from companies never offered to that
+// user before, so nobody sees a company twice. Ranking is deliberately simple for now.
+export async function leadsFor(db, userId, date) {
+  const existing = await db.prepare('SELECT COUNT(*) AS n FROM leads WHERE user_id = ? AND lead_date = ?').bind(userId, date).first();
   const missing = LEADS_PER_DAY - (existing?.n ?? 0);
   if (missing > 0) {
-    await db.prepare(`INSERT INTO leads (company_uuid, lead_date)
-      SELECT uuid, ? FROM companies c WHERE NOT EXISTS (SELECT 1 FROM leads l WHERE l.company_uuid = c.uuid)
+    await db.prepare(`INSERT INTO leads (user_id, company_uuid, lead_date)
+      SELECT ?, uuid, ? FROM companies c WHERE NOT EXISTS (SELECT 1 FROM leads l WHERE l.user_id = ? AND l.company_uuid = c.uuid)
       AND (status IS NULL OR status = 'operational')
-      ORDER BY ${LEAD_RANK} LIMIT ?`).bind(date, missing).run();
+      ORDER BY ${LEAD_RANK} LIMIT ?`).bind(userId, date, userId, missing).run();
   }
-  const { results } = await db.prepare(`${LEAD_SELECT} WHERE l.lead_date = ? ORDER BY l.id`).bind(date).all();
+  const { results } = await db.prepare(`${LEAD_SELECT} WHERE l.user_id = ? AND l.lead_date = ? ORDER BY l.id`).bind(userId, date).all();
   return results.map(toLead);
 }
 
@@ -93,8 +95,9 @@ export const OUTCOMES = ['call', 'rejected', 'no_reply'];
 //   reached_out: true | false | null   the extension's original yes/no; true also marks it sent
 //   tier: 'A' | 'B' | 'C' | null
 // Returns { lead } or { error: { code, message, status } }.
-export async function updateLead(db, id, input, now = new Date().toISOString()) {
-  const current = await db.prepare('SELECT id, sent_at, dismissed_at, outcome FROM leads WHERE id = ?').bind(id).first();
+// Another user's lead is reported as missing, never as forbidden, so ids reveal nothing.
+export async function updateLead(db, userId, id, input, now = new Date().toISOString()) {
+  const current = await db.prepare('SELECT id, sent_at, dismissed_at, outcome FROM leads WHERE id = ? AND user_id = ?').bind(id, userId).first();
   if (!current) return { error: { code: 'not_found', message: 'No such lead.', status: 404 } };
   if ('outcome' in input && input.outcome !== null && !OUTCOMES.includes(input.outcome)) {
     return { error: { code: 'invalid_outcome', message: `outcome must be one of ${OUTCOMES.join(', ')}, or null.`, status: 400 } };
@@ -139,8 +142,8 @@ export async function updateLead(db, id, input, now = new Date().toISOString()) 
   if (typeof input.notes === 'string') { assign('notes', input.notes.slice(0, 4000)); assign('notes_at', now); }
   if ('tier' in input) assign('tier', ['A', 'B', 'C'].includes(input.tier) ? input.tier : null);
 
-  if (set.length) await db.prepare(`UPDATE leads SET ${set.join(', ')} WHERE id = ?`).bind(...values, id).run();
-  return { lead: toLead(await db.prepare(`${LEAD_SELECT} WHERE l.id = ?`).bind(id).first()) };
+  if (set.length) await db.prepare(`UPDATE leads SET ${set.join(', ')} WHERE id = ? AND user_id = ?`).bind(...values, id, userId).run();
+  return { lead: toLead(await db.prepare(`${LEAD_SELECT} WHERE l.id = ? AND l.user_id = ?`).bind(id, userId).first()) };
 }
 
 // History: every lead ever shown, newest first, filtered the way the
@@ -154,16 +157,16 @@ export const HISTORY_FILTERS = {
   not_for_me: 'l.dismissed_at IS NOT NULL'
 };
 
-export async function leadHistory(db, { status = 'all', limit = 50, before = null } = {}) {
-  const where = [HISTORY_FILTERS[status]];
-  const values = [];
+export async function leadHistory(db, userId, { status = 'all', limit = 50, before = null } = {}) {
+  const where = ['l.user_id = ?', HISTORY_FILTERS[status]];
+  const values = [userId];
   if (before) { where.push('l.id < ?'); values.push(before); }
   const size = Math.min(Math.max(1, limit), 200);
   const { results } = await db.prepare(`${LEAD_SELECT} WHERE ${where.join(' AND ')} ORDER BY l.id DESC LIMIT ?`).bind(...values, size + 1).all();
   const page = results.slice(0, size).map(toLead);
   const counts = {};
   for (const [key, condition] of Object.entries(HISTORY_FILTERS)) {
-    counts[key] = (await db.prepare(`SELECT COUNT(*) AS n FROM leads l WHERE ${condition}`).first()).n;
+    counts[key] = (await db.prepare(`SELECT COUNT(*) AS n FROM leads l WHERE l.user_id = ? AND ${condition}`).bind(userId).first()).n;
   }
   return { leads: page, counts, next_before: results.length > size ? page[page.length - 1].id : null };
 }

@@ -1,3 +1,5 @@
+import { accessToken, currentUser, signIn, signOut } from './auth.js';
+
 const DEFAULT_API = 'http://localhost:8787';
 const statusEl = document.getElementById('status');
 const listEl = document.getElementById('leads');
@@ -10,11 +12,17 @@ async function apiBase() {
   return api || DEFAULT_API;
 }
 
+class SignedOut extends Error {}
+
+// Every API call carries the WorkOS access token. A 401 means the session is gone, so sign out here too.
 async function call(path, options = {}) {
+  const token = await accessToken();
+  if (!token) { showSignedOut(); throw new SignedOut('Signed out'); }
   const response = await fetch(`${await apiBase()}${path}`, {
     ...options,
-    headers: { 'Content-Type': 'application/json', ...options.headers }
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...options.headers }
   });
+  if (response.status === 401) { await signOut(); showSignedOut(); throw new SignedOut('Signed out'); }
   const body = await response.json();
   if (!response.ok) throw new Error(body.error?.message ?? `Request failed (${response.status})`);
   return body;
@@ -81,7 +89,7 @@ async function loadLeads() {
     statusEl.textContent = leads.length ? '' : 'No leads yet. Fill in "About you", then run a Dealroom sync.';
     updateProgress();
   } catch (error) {
-    statusEl.textContent = `Couldn't load leads: ${error.message}`;
+    if (!(error instanceof SignedOut)) statusEl.textContent = `Couldn't load leads: ${error.message}`;
   }
 }
 
@@ -103,5 +111,44 @@ form.addEventListener('submit', async event => {
   await loadLeads();
 });
 
-loadProfile();
-loadLeads();
+const signedOutEl = document.getElementById('signed-out');
+const signedInEl = document.getElementById('signed-in');
+const accountEl = document.getElementById('account');
+const signInError = document.getElementById('sign-in-error');
+
+function showSignedOut() {
+  signedInEl.hidden = true;
+  accountEl.hidden = true;
+  signedOutEl.hidden = false;
+  progressEl.textContent = '';
+}
+
+function showSignedIn(user) {
+  signedOutEl.hidden = true;
+  signedInEl.hidden = false;
+  accountEl.hidden = false;
+  document.getElementById('account-email').textContent = user.email ?? '';
+  loadProfile();
+  loadLeads();
+}
+
+document.getElementById('sign-in').addEventListener('click', async event => {
+  signInError.textContent = '';
+  event.target.disabled = true;
+  try {
+    showSignedIn(await signIn());
+  } catch (error) {
+    signInError.textContent = `Sign-in didn't work: ${error.message}`;
+  } finally {
+    event.target.disabled = false;
+  }
+});
+
+document.getElementById('sign-out').addEventListener('click', async () => {
+  await signOut();
+  listEl.replaceChildren();
+  showSignedOut();
+});
+
+const user = await currentUser();
+user ? showSignedIn(user) : showSignedOut();
