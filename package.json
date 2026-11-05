@@ -1,0 +1,21 @@
+{
+  "name": "synergy",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=22.13"
+  },
+  "scripts": {
+    "dev": "npm run wrangler -- dev --test-scheduled",
+    "db:migrate:local": "npm run wrangler -- d1 migrations apply synergy --local",
+    "test": "node --test",
+    "check": "npm test && npm run wrangler -- deploy --dry-run",
+    "extension:package": "node scripts/package-extension.mjs",
+    "deploy": "npm run wrangler -- deploy",
+    "wrangler": "env -u CLOUDFLARE_API_KEY -u CLOUDFLARE_EMAIL wrangler --profile 40for40"
+  },
+  "devDependencies": {
+    "wrangler": "4.157.0"
+  }
+}
