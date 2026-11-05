@@ -1,0 +1,811 @@
+<title>Synergy Daily Ten</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: state tabs on top, one phone-sized Chrome side panel in the middle, a short note on that state beside it.
+   Skin: Ben's Synergy brand, draft 2 (card 173): slick corporate finance. Onyx and deep blues, ivory text,
+   dark oak as the only warm accent (panel top strip, open lead's spine, well-done card), at most 5% of a screen.
+   Ben's draft is private, so these colour values are close stand-ins for his named palette
+   (onyx, midnight, harbour, steel, ivory, stone, dark oak, signal); swap in his exact values once shared.
+   Token roles: --lime = the action colour (ivory on dark, harbour on light). Names kept so the rest of the CSS is unchanged. */
+:root {
+  --page: #0a0c10; --phone: #0f1b2d; --tile: #13253b; --line: #1f3550; --edge: #2f4a6b;
+  --text: #f1ece2; --sub: #d7d5d2; --muted: #8d9aad;
+  --lime: #f1ece2; --lime-ink: #0a0c10; --yellow: #c69467; --pink: #d07878;
+  --squiggle: #b98a5e; --club: #07243f; --club-ink: #f1ece2; --oak: #6b4423;
+  --s-msg: #8fb3e0; --s-call: #5fb58c; --s-rej: #d07878;
+  --logo-a: #a6e22e; --logo-b: #ffd400; --logo-c: #ff7fcf;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --head: "Cormorant Garamond", Garamond, Georgia, serif;
+  --serif: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
+  --mono: var(--serif);
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
+  --page: #e9e6e1; --phone: #f7f5f1; --tile: #ffffff; --line: #d7d5d2; --edge: #a9afb8;
+  --text: #0a0c10; --sub: #2a3442; --muted: #5c6675;
+  --lime: #07243f; --lime-ink: #f7f5f1; --yellow: #6b4423; --pink: #8e2e2e;
+  --squiggle: #7a4e2b; --club: #07243f; --club-ink: #f1ece2; --oak: #5a3a22;
+  --s-msg: #1f4e8a; --s-call: #1e7a50; --s-rej: #9b2c2c;
+  --logo-a: #4f7a0a; --logo-b: #b88f00; --logo-c: #c2408f;
+  color-scheme: light; } }
+:root[data-theme="light"] {
+  --page: #e9e6e1; --phone: #f7f5f1; --tile: #ffffff; --line: #d7d5d2; --edge: #a9afb8;
+  --text: #0a0c10; --sub: #2a3442; --muted: #5c6675;
+  --lime: #07243f; --lime-ink: #f7f5f1; --yellow: #6b4423; --pink: #8e2e2e;
+  --squiggle: #7a4e2b; --club: #07243f; --club-ink: #f1ece2; --oak: #5a3a22;
+  --s-msg: #1f4e8a; --s-call: #1e7a50; --s-rej: #9b2c2c;
+  --logo-a: #4f7a0a; --logo-b: #b88f00; --logo-c: #c2408f;
+  color-scheme: light; }
+:root[data-theme="dark"] {
+  --page: #0a0c10; --phone: #0f1b2d; --tile: #13253b; --line: #1f3550; --edge: #2f4a6b;
+  --text: #f1ece2; --sub: #d7d5d2; --muted: #8d9aad;
+  --lime: #f1ece2; --lime-ink: #0a0c10; --yellow: #c69467; --pink: #d07878;
+  --squiggle: #b98a5e; --club: #07243f; --club-ink: #f1ece2; --oak: #6b4423;
+  --s-msg: #8fb3e0; --s-call: #5fb58c; --s-rej: #d07878;
+  --logo-a: #a6e22e; --logo-b: #ffd400; --logo-c: #ff7fcf;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--text); font-family: var(--mono); font-size: 13px; line-height: 1.45;
+  padding-block: 24px 48px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+button { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+
+.top { max-width: 900px; margin: 0 auto 24px; display: flex; flex-wrap: wrap; gap: 12px 24px; align-items: center; justify-content: space-between; }
+.logo { font-weight: 800; letter-spacing: -0.02em; font-size: 16px; }
+.logo .a { color: var(--logo-a); } .logo .b { color: var(--logo-b); } .logo .c { color: var(--logo-c); }
+.logo { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.logo small { color: var(--muted); font-weight: 500; font-size: 12px; margin-left: 6px; }
+.tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.tabs a { text-decoration: none; color: var(--sub); font-size: 12px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--edge); }
+.tabs a[aria-current="page"] { background: var(--lime); border-color: var(--lime); color: var(--lime-ink); font-weight: 700; }
+.tabs a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+
+.stage { display: flex; flex-wrap: wrap; gap: 40px; justify-content: center; align-items: flex-start; max-width: 900px; margin: 0 auto; }
+
+/* Phone */
+.phone { width: 100%; max-width: 375px; min-height: 640px; background: var(--phone); border: 1px solid var(--edge); border-radius: 36px; padding: 14px 14px 18px; box-shadow: 0 30px 60px -30px rgba(0,0,0,.5); }
+.island { width: 96px; height: 26px; border-radius: 20px; background: var(--page); margin: 0 auto 14px; border: 1px solid var(--line); }
+.head { display: flex; justify-content: space-between; align-items: baseline; padding: 0 4px 12px; }
+.head h1 { font-size: 20px; margin: 0; letter-spacing: -0.02em; }
+.head .date { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+.sublbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; padding: 14px 4px 6px; display: flex; justify-content: space-between; }
+
+/* Market feedback banner */
+.alert { display: flex; gap: 10px; align-items: center; background: color-mix(in oklab, var(--s-call) 14%, var(--tile)); border: 1px solid var(--s-call); border-radius: 12px; padding: 10px 12px; margin-bottom: 4px; }
+.alert b { color: var(--s-call); }
+.alert .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--s-call); flex: none; }
+
+ul.leads { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.lead { background: var(--tile); border: 1px solid var(--line); border-radius: 14px; }
+.lead.done .rowwrap { opacity: .55; }
+.rowwrap { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+.row { display: grid; grid-template-columns: 22px 1fr; gap: 10px; align-items: center; width: 100%; padding: 10px 4px 10px 12px; background: none; border: 0; text-align: left; cursor: pointer; border-radius: 14px; min-width: 0; }
+.who { min-width: 0; }
+.name { font-weight: 700; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: flex; gap: 6px; align-items: center; }
+.new-dot { font-size: 9px; font-weight: 700; color: var(--pink); letter-spacing: .06em; flex: none; }
+.meta { color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meta b { color: var(--sub); font-weight: 500; }
+
+/* Tier: signal bars */
+.sig { display: flex; align-items: flex-end; gap: 2px; height: 16px; }
+.sig span { width: 5px; border-radius: 1px; background: var(--edge); }
+.sig span:nth-child(1) { height: 6px; } .sig span:nth-child(2) { height: 11px; } .sig span:nth-child(3) { height: 16px; }
+.sig[data-s="3"] span, .sig[data-s="2"] span:nth-child(-n+2), .sig[data-s="1"] span:nth-child(1) { background: var(--lime); }
+
+/* Sent: the daily yes/no */
+.sent { margin-right: 10px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 6px 10px; border-radius: 999px; border: 1.5px dashed var(--edge); background: transparent; color: var(--muted); cursor: pointer; white-space: nowrap; }
+.sent:hover { border-color: var(--s-msg); color: var(--s-msg); }
+.sent[aria-pressed="true"] { border-style: solid; border-color: var(--s-msg); background: var(--s-msg); color: var(--phone); }
+
+/* Status pills */
+.pill { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; padding: 3px 8px 3px 7px; border-radius: 999px; border: 1px solid currentColor; display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; margin-right: 12px; }
+.pill::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+[data-st="msg"] { color: var(--s-msg); } [data-st="call"] { color: var(--s-call); } [data-st="rej"] { color: var(--s-rej); } [data-st="nore"], [data-st="nope"] { color: var(--muted); } [data-st="quiet"] { color: var(--squiggle); }
+.lead.is-rej .name, .lead.is-nope .name { text-decoration: line-through; color: var(--muted); }
+
+/* Detail */
+.more { padding: 0 12px 12px; display: flex; flex-direction: column; gap: 10px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 10px; padding: 2px 8px; border-radius: 6px; background: var(--phone); border: 1px solid var(--line); color: var(--sub); }
+.chip.trig { border-color: var(--squiggle); color: var(--squiggle); }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border-radius: 10px; overflow: hidden; border: 1px solid var(--line); margin: 0; }
+.stats div { background: var(--phone); padding: 6px 8px; min-width: 0; }
+.stats dt { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+.stats dd { margin: 0; font-weight: 700; font-variant-numeric: tabular-nums; font-size: 12px; }
+.why { color: var(--sub); font-size: 12px; margin: 0; }
+.outcome { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; }
+.outcome button { font-size: 10px; font-weight: 700; padding: 7px 0; border-radius: 8px; border: 1px solid var(--line); background: transparent; cursor: pointer; text-transform: uppercase; letter-spacing: .04em; }
+.outcome button[aria-pressed="true"] { border-color: currentColor; background: color-mix(in oklab, currentColor 14%, transparent); }
+
+.squig { position: relative; padding: 14px 14px 12px; }
+.squig svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.squig rect { fill: none; stroke: var(--squiggle); stroke-width: 1.6; }
+.squig p { margin: 0; font-size: 11.5px; white-space: pre-wrap; position: relative; }
+.squig .copy { position: relative; margin-top: 10px; font-size: 11px; font-weight: 700; padding: 6px 12px; border: 0; border-radius: 8px; background: var(--lime); color: var(--lime-ink); cursor: pointer; }
+.squig .tag { position: absolute; top: -8px; left: 12px; background: var(--tile); padding: 0 6px; font-size: 9px; color: var(--squiggle); letter-spacing: .1em; text-transform: uppercase; font-weight: 700; }
+
+/* Onboarding */
+.steps { display: flex; gap: 6px; padding: 0 4px 16px; }
+.steps i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.steps i.on { background: var(--lime); }
+.ob { padding: 0 4px; display: flex; flex-direction: column; gap: 14px; }
+.ob h2 { font-size: 18px; margin: 0; letter-spacing: -0.02em; }
+.ob p { margin: 0; color: var(--sub); }
+.btn { border: 0; border-radius: 10px; padding: 11px 14px; font-weight: 700; cursor: pointer; background: var(--lime); color: var(--lime-ink); width: 100%; }
+.btn.ghost { background: transparent; color: var(--sub); border: 1px solid var(--edge); }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+.soon { display: flex; justify-content: space-between; align-items: center; gap: 10px; border: 1px dashed var(--edge); border-radius: 10px; padding: 10px 12px; color: var(--muted); }
+.soon span:last-child { font-size: 9px; text-transform: uppercase; letter-spacing: .1em; border: 1px solid var(--edge); border-radius: 999px; padding: 2px 8px; flex: none; }
+.field { display: flex; flex-direction: column; gap: 4px; }
+.field label, .field .lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+.field input, .field select { font: inherit; font-size: 13px; color: var(--text); background: var(--tile); border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; width: 100%; }
+.toggles { display: flex; flex-wrap: wrap; gap: 6px; }
+.toggles button { font-size: 11px; padding: 5px 10px; border-radius: 999px; border: 1px solid var(--edge); background: transparent; color: var(--sub); cursor: pointer; }
+.toggles button[aria-pressed="true"] { border-color: var(--lime); color: var(--lime); }
+.toggles button[disabled] { cursor: not-allowed; opacity: .6; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.done-mark { color: var(--lime); font-weight: 700; }
+
+/* Side note */
+.spec { flex: 1 1 260px; max-width: 380px; color: var(--sub); padding-top: 8px; }
+.spec h2 { font-size: 22px; color: var(--text); margin: 0 0 8px; letter-spacing: -0.02em; text-wrap: balance; }
+.spec h3 { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin: 20px 0 8px; }
+.spec p { margin: 0 0 8px; }
+.spec ul { margin: 0; padding-left: 16px; display: flex; flex-direction: column; gap: 4px; }
+.note { font-size: 11px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; margin-top: 24px; }
+
+/* Any replies? */
+.ask { width: 100%; display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--s-msg); background: color-mix(in oklab, var(--s-msg) 10%, var(--tile)); cursor: pointer; text-align: left; margin-bottom: 4px; }
+.ask b { color: var(--s-msg); }
+.ask .n { font-size: 11px; color: var(--muted); }
+.replies { list-style: none; margin: 0 0 4px; padding: 4px 12px 10px; border: 1px solid var(--s-msg); border-top: 0; border-radius: 0 0 12px 12px; margin-top: -8px; display: flex; flex-direction: column; gap: 10px; background: var(--tile); }
+.replies li { display: flex; flex-direction: column; gap: 6px; padding-top: 10px; border-top: 1px solid var(--line); }
+.replies li:first-child { border-top: 0; }
+.replies .nm { font-weight: 700; display: flex; justify-content: space-between; gap: 8px; }
+.replies .nm span { font-weight: 400; font-size: 11px; color: var(--muted); white-space: nowrap; }
+.replies .nm span.q { color: var(--squiggle); }
+.alert.warn { background: color-mix(in oklab, var(--squiggle) 12%, var(--tile)); border-color: var(--squiggle); }
+.alert.warn b { color: var(--squiggle); } .alert.warn .dot { background: var(--squiggle); }
+.alert.err { background: color-mix(in oklab, var(--s-rej) 12%, var(--tile)); border-color: var(--s-rej); }
+.alert.err b { color: var(--s-rej); } .alert.err .dot { background: var(--s-rej); }
+
+/* Not for me */
+.nope-row { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.link { background: none; border: 0; padding: 4px 0; color: var(--muted); font-size: 11px; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.reasons { display: flex; flex-wrap: wrap; gap: 6px; }
+.reasons button { font-size: 10px; padding: 4px 9px; border-radius: 999px; border: 1px solid var(--edge); background: transparent; color: var(--sub); cursor: pointer; }
+.reasons button[aria-pressed="true"] { border-color: var(--text); color: var(--text); }
+.unk { color: var(--squiggle); }
+.hint { font-size: 11px; color: var(--muted); margin: 0; }
+
+/* Carried over + streak */
+.from { font-size: 9px; font-weight: 700; color: var(--squiggle); letter-spacing: .06em; flex: none; }
+.streak { display: flex; align-items: center; gap: 10px; padding: 0 4px 10px; font-size: 11px; color: var(--muted); }
+.streak b { color: var(--lime); }
+.streak .dots { display: flex; gap: 3px; }
+.streak .dots i { width: 8px; height: 8px; border-radius: 2px; background: var(--line); }
+.streak .dots i.on { background: var(--lime); }
+.welldone { display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 12px; background: var(--lime); color: var(--lime-ink); margin-bottom: 4px; }
+.welldone b { font-size: 15px; }
+.welldone span { font-size: 12px; }
+
+/* Head gear */
+.head .r { display: flex; gap: 10px; align-items: baseline; }
+.gear { background: none; border: 0; padding: 2px; cursor: pointer; color: var(--muted); font-size: 11px; text-decoration: underline; text-underline-offset: 3px; }
+
+/* Loading */
+.skel { height: 52px; border-radius: 14px; background: var(--tile); border: 1px solid var(--line); animation: pulse 1.4s ease-in-out infinite; }
+@keyframes pulse { 50% { opacity: .5; } }
+@media (prefers-reduced-motion: reduce) { .skel { animation: none; } }
+
+/* Empty / weekly */
+.empty { border: 1px dashed var(--edge); border-radius: 14px; padding: 16px; display: flex; flex-direction: column; gap: 10px; margin-top: 6px; }
+.empty p { margin: 0; color: var(--sub); }
+.funnel { display: flex; flex-direction: column; gap: 10px; padding: 0 4px; }
+.frow { display: grid; grid-template-columns: 92px 1fr 28px; gap: 10px; align-items: center; font-size: 12px; font-variant-numeric: tabular-nums; }
+.frow .track { height: 12px; background: var(--line); border-radius: 3px; overflow: hidden; }
+.frow .fill { height: 100%; background: var(--lime); border-radius: 3px; }
+.frow b { text-align: right; }
+.wk { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; padding: 0 4px; }
+.wk div { text-align: center; font-size: 10px; color: var(--muted); }
+.wk i { display: block; height: 28px; border-radius: 6px; border: 1px solid var(--line); margin-bottom: 4px; }
+.wk i.y { background: var(--lime); border-color: var(--lime); }
+.wk i.p { background: color-mix(in oklab, var(--lime) 35%, transparent); }
+.suggest { border: 1px solid var(--edge); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px; margin: 0 4px; }
+.suggest .two { gap: 6px; }
+.tabgroup { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+.tabgroup > span { font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; margin-right: 4px; }
+.tabs { flex-direction: column; align-items: flex-end; gap: 6px; }
+@media (max-width: 640px) { .tabs { align-items: flex-start; } }
+
+/* VC lead detail */
+.partner { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12px; }
+.partner .lbl { display: block; font-size: 9px; color: var(--muted); text-transform: uppercase; letter-spacing: .1em; }
+.links { display: flex; gap: 4px; }
+.links a { display: inline-flex; align-items: center; gap: 4px; font-size: 10px; color: var(--sub); text-decoration: none; border: 1px solid var(--line); border-radius: 8px; padding: 5px 7px; background: var(--phone); }
+.links a:hover { border-color: var(--lime); color: var(--lime); }
+.links a:focus-visible { outline: 2px solid var(--lime); outline-offset: 2px; }
+.links svg { width: 13px; height: 13px; flex: none; }
+.port { width: 100%; border-collapse: collapse; font-size: 11px; font-variant-numeric: tabular-nums; background: var(--phone); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.port th { font-size: 9px; font-weight: 500; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); }
+.port th:not(:first-child), .port td:not(:first-child) { text-align: right; white-space: nowrap; }
+.port td { padding: 6px 8px; border-top: 1px solid var(--line); vertical-align: top; }
+.port td span { display: block; color: var(--muted); font-size: 10px; }
+.port tr.fit td { border-top: 0; padding-top: 0; color: var(--sub); font-size: 10.5px; text-align: left; white-space: normal; }
+.port tr.fit td::before { content: "Why now: "; color: var(--squiggle); }
+.notes { width: 100%; resize: vertical; font: inherit; font-size: 12px; color: var(--text); background: var(--phone); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; }
+.notes::placeholder { color: var(--muted); }
+.notes:focus-visible { outline: 2px solid var(--lime); outline-offset: 1px; }
+.head .r .gear + .gear { margin-left: -4px; }
+.seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.seg2 button { padding: 8px 0; border-radius: 8px; border: 1px solid var(--edge); background: transparent; color: var(--sub); cursor: pointer; font-size: 12px; }
+.seg2 button[aria-pressed="true"] { border-color: var(--lime); background: var(--lime); color: var(--lime-ink); font-weight: 700; }
+.group-lbl { font-size: 11px; font-weight: 700; color: var(--text); border-top: 1px solid var(--line); padding-top: 12px; }
+
+/* Editable contact */
+.partner .who-c { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.partner .email { font-size: 12px; color: var(--sub); overflow-wrap: anywhere; }
+.partner .email .link { font-size: 11px; padding: 0 2px; }
+.m-none { color: var(--muted); font-style: italic; }
+.contact-edit { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--edge); border-radius: 6px; background: var(--phone); }
+.contact-edit input { font: inherit; font-size: 13px; color: var(--text); background: var(--tile); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
+.contact-edit input:focus-visible { outline: 2px solid var(--lime); outline-offset: 1px; }
+.contact-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.contact-actions .btn { width: auto; padding: 8px 14px; }
+
+/* ---------- Synergy skin, Ben's draft 2 (card 173) ---------- */
+body { font-family: var(--serif); font-size: 13.5px; font-variant-numeric: lining-nums tabular-nums; background: var(--page); }
+.head h1, .ob h2, .spec h2, .welldone b { font-family: var(--head); font-weight: 600; letter-spacing: .01em; }
+.tabs a, .sublbl, .pill, .sent, .chip, .tag, .lbl, .field label, .field .lbl, .group-lbl, .copy, .btn, .outcome button, .seg2 button, .port th, .stats dt, .frow span, .wk div, .ask b, .alert b, .new-dot, .from, .gear, .streak b { font-family: var(--display); font-weight: 600; letter-spacing: .06em; }
+.sent, .pill, .chip, .tag, .sublbl, .port th, .stats dt, .new-dot, .from, .btn, .copy, .outcome button, .tabs a { text-transform: uppercase; }
+.head h1 { font-size: 24px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.head { flex-wrap: wrap; gap: 2px 12px; }
+.head .r { flex-wrap: wrap; justify-content: flex-end; gap: 4px 10px; }
+.head .date { white-space: nowrap; }
+/* The merge mark: two lines meeting and carrying on as one. */
+.head h1::before { content: ""; width: 20px; height: 20px; flex: none; background: var(--text);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M3%206c6%200%207%206%2011%206h7M3%2018c6%200%207-6%2011-6%22/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M3%206c6%200%207%206%2011%206h7M3%2018c6%200%207-6%2011-6%22/%3E%3C/svg%3E") center / contain no-repeat; }
+.spec h2 { font-size: 28px; } .ob h2 { font-size: 22px; }
+.phone { border: 1px solid var(--edge); border-top: 3px solid var(--oak); box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); }
+.island { background: var(--page); border-color: var(--line); }
+.lead { border-radius: 8px; border-color: var(--line); }
+.lead:has(.more) { box-shadow: inset 3px 0 0 var(--oak); }
+.row { border-radius: 8px; }
+.name { font-family: var(--serif); font-weight: 600; font-size: 14px; }
+.meta { font-size: 11.5px; }
+.sig span { background: var(--line); }
+.sent, .pill, .chip, .tabs a, .toggles button, .seg2 button, .outcome button, .links a { border-radius: 999px; }
+.btn, .copy, .squig .copy { border-radius: 999px; }
+.welldone { background: var(--club); color: var(--club-ink); border-left: 3px solid var(--oak); border-radius: 8px; }
+.welldone b { font-size: 22px; font-weight: 600; line-height: 1.1; }
+.ask, .alert, .replies, .empty, .suggest, .squig { border-radius: 8px; }
+.squig p { font-size: 12px; }
+.port td { font-size: 11.5px; }
+.port tr.fit td::before { font-family: var(--display); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.streak .dots i { border-radius: 1px; width: 4px; height: 12px; }
+.spec { font-size: 14px; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="wobble"><feTurbulence type="fractalNoise" baseFrequency="0.035" numOctaves="2" seed="4"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter>
+</svg>
+
+<div class="top">
+  <div class="logo"><span class="a">40</span><span class="b">(</span><span class="c">40</span><span class="b">)</span><small>Day 4 · Synergy</small></div>
+  <nav class="tabs" aria-label="User states">
+    <div class="tabgroup"><span>Journey</span>
+      <a href="#onboarding" data-v="onboarding">Onboarding</a>
+      <a href="#loading" data-v="loading">Loading</a>
+      <a href="#day-1" data-v="day-1">Day 1</a>
+      <a href="#day-2" data-v="day-2">Day 2</a>
+      <a href="#day-3" data-v="day-3">Day 3</a>
+      <a href="#follow-up" data-v="follow-up">Two weeks in</a>
+    </div>
+    <div class="tabgroup"><span>Other</span>
+      <a href="#weekly" data-v="weekly">Weekly</a>
+      <a href="#history" data-v="history">History</a>
+      <a href="#missed" data-v="missed">Missed a day</a>
+      <a href="#search" data-v="search">Settings</a>
+      <a href="#missing-data" data-v="missing-data">Missing data</a>
+      <a href="#no-leads" data-v="no-leads">No leads</a>
+      <a href="#error" data-v="error">Error</a>
+    </div>
+  </nav>
+</div>
+
+<div class="stage">
+  <section class="phone" aria-label="Synergy side panel" id="phone"></section>
+  <aside class="spec" id="spec"></aside>
+</div>
+
+<script>
+/* ---------- Sample data (invented funds, partners and companies) ---------- */
+/* Portfolio companies: name | sector | revenue £m | EBITDA £m (blank = unknown) | year of last round | growth % a year | why it fits an exit now */
+const P = Object.fromEntries(`
+p1|Hartley Facilities|facilities management|14.2|2.4|2017|18|85% of revenue is multi-year contracts; founder is 64 and has no successor
+p2|Corelink Payroll|payroll software|21.5|4.6|2019|15|Profitable since 2021 and funds its own growth, so it has no use for another round
+p3|Little Acorns Nurseries|nurseries|9.8|1.7|2018|24|11 sites, 3 more opening from cash; the kind of roll-up platform PE buyers pay up for
+p4|Marlow Compliance|compliance services|6.4|1.2|2019|11|Regulation-driven recurring work; one co-founder stepped back last year
+p5|Ironbridge Gyms|gym chain|12.6|1.9|2016|9|Bank facility due 2027, so a refinancing or sale decision is coming anyway
+p6|Oakfield Dental Labs|dental labs|8.7|1.9|2017|13|22% margin on NHS and private work; three trade buyers have done similar deals
+p7|Calder Accounting Cloud|accounting software|7.2|1.6|2018|8|Steady subscription revenue, growth slowing; too mature for venture, right size for PE
+p8|Brightwater Pest Control|pest control|15.1|2.8|2019|19|Two rivals in the sector sold to PE this year, so buyers are active right now
+p9|Norton Lift Services|lift maintenance|10.4|2.2|2018|12|Maintenance contracts renew every year; founder in his late sixties
+p10|Greenline Waste|commercial waste|13.8|1.4|2020|10|Asset-heavy with a loan renewal next year; a buyer with a balance sheet solves both
+p11|Keel Marine Logistics|port logistics|11.3|1.1|2019|21|Fast growth but thin margin; a trade buyer could lift it quickly
+p12|Thistle Lab Services|testing labs|5.1|1.0|2018|5|Accredited lab with long client relationships; small but very defensible
+p13|Blueline Fire Services|fire safety|17.9||2018|7|Large compliance-driven revenue; profit not public, worth confirming before writing
+p14|Quayside Data Centres|data centres|9.4||2019|14|Infrastructure buyers are active; profit not public
+p15|Fernhill Care Homes|care homes|16.2|2.1|2017|6|Property-backed and steady occupancy; an obvious target for specialist investors
+p16|Pathway Learning|training provider|6.9|1.3|2019|16|Government-funded apprenticeships give it predictable revenue
+p17|Mosaic Print Group|print management|19.0|2.6|2015|4|Ten years since its last round; cash-generative but not growing like a venture company
+p18|Harbour Telecoms|business telecoms|8.1|1.5|2018|9|Monthly contracts with 2,000 SMEs; consolidators are buying in this space
+p19|Glenmore Vets|veterinary group|11.7|2.0|2019|17|Vet groups are among the most sought-after roll-ups in the UK
+p20|Tidewater Marine Services|marine services|7.6|1.2|2020|12|Niche specialist with few competitors; growth funded from cash
+p21|Copperfield Security|security services|12.9|1.8|2018|10|Contracted guarding and monitoring revenue, held seven years
+p22|Linden Clinics|physio clinics|6.2|1.1|2019|20|Insurer-funded patients and 8 clinics; growing 20% without new money
+p23|Arden Fleet Care|fleet maintenance|13.5|1.4|2017|8|Long contracts with fleet operators; margin room for an operator-led buyer
+p24|Sable Recruitment|recruitment|18.3|2.9|2016|7|16% margin, high for the sector; held ten years
+p25|Westgate Labs|lab equipment|9.9|1.7|2019|11|Service contracts on installed equipment make up most of its revenue
+p26|Orchard Software|practice software|7.7|2.3|2018|9|30% margin and low churn; a classic software buy-out target
+p27|Riverside Packaging|packaging|14.6|1.6|2017|6|Steady food-sector customers; the fund is in its extension years
+`.trim().split("\n").map(r => { const [id, n, sector, rev, eb, last, growth, fit] = r.split("|"); return [id, { n, sector, rev:+rev, ebitda: eb === "" ? null : +eb, last:+last, growth:+growth, fit }]; }));
+
+/* VC funds: the leads. s = tier strength (3 = Tier 1). m = matching portfolio companies. */
+const L = {
+  l1:{ name:"Thornbury Ventures", fund:"Fund II", vintage:2015, city:"London", partner:"Helen Marsh", s:3, trig:"Fund ending", m:["p1","p2","p3"], why:"Their Fund II (2015) is 11 years old and three profitable companies in it haven't raised since 2019" },
+  l2:{ name:"Pennant Capital", fund:"Fund I", vintage:2014, city:"Manchester", partner:"David Okafor", s:3, trig:"Long holds", m:["p5","p6","p7"], why:"Three cash-generative companies held 7+ years, no exits since 2021" },
+  l3:{ name:"Larkspur Growth", fund:"Fund III", vintage:2017, city:"London", partner:"Priya Nair", s:3, trig:"Fund ending", m:["p8","p9"], why:"Fund III closes its investment period next year; two companies past £2m EBITDA" },
+  l4:{ name:"Northmoor Ventures", fund:"Fund I", vintage:2016, city:"Leeds", partner:"Tom Ashby", s:2, trig:"Long holds", m:["p10","p11"], why:"Two services companies held since their Series A, growth slowing" },
+  l5:{ name:"Calder Bridge Capital", fund:"Fund II", vintage:2018, city:"Edinburgh", partner:"Fiona Reid", s:2, trig:"No recent exits", m:["p12","p4"], why:"No exits announced from Fund II; small team" },
+  l6:{ name:"Wexford Seed Partners", fund:"Fund II", vintage:2016, city:"Bristol", partner:"Sam Ellis", s:2, trig:"Long holds", m:["p15","p16"], why:"Seed fund holding two companies that outgrew venture" },
+  l7:{ name:"Harrowgate Ventures", fund:"Fund I", vintage:2013, city:"London", partner:"James Whitlock", s:2, trig:"Fund ending", m:["p17"], why:"Their Fund I (2013) is 13 years old with one large holding left" },
+  l8:{ name:"Brackenfield VC", fund:"Fund II", vintage:2017, city:"Cambridge", partner:"Anna Kowalski", s:1, trig:"Long holds", m:["p13","p14"], why:"Revenue fits, but profit not disclosed for either company" },
+  l9:{ name:"Saltire Tech Fund", fund:"Fund I", vintage:2019, city:"Glasgow", partner:"Ruth Campbell", s:1, trig:"No recent exits", m:["p20"], why:"Younger fund; one company fits" },
+  l10:{ name:"Medway Capital", fund:"Fund I", vintage:2018, city:"Rochester", partner:"Leo Grant", s:1, trig:"Long holds", m:["p21"], why:"One security company held 7 years; fund size not public" },
+  l11:{ name:"Kestrel Growth Partners", fund:"Fund II", vintage:2014, city:"London", partner:"Nadia Hussain", s:3, trig:"Fund ending", m:["p22","p23","p24"], why:"Old fund, three companies with steady profit and no new rounds" },
+  l12:{ name:"Aldwych Ventures", fund:"Fund III", vintage:2016, city:"London", partner:"Chris Doyle", s:2, trig:"Long holds", m:["p25","p26"], why:"Two software companies profitable since 2022" },
+  l13:{ name:"Pinfold Capital", fund:"Fund I", vintage:2015, city:"Sheffield", partner:"Gemma Price", s:2, trig:"Fund ending", m:["p27"], why:"Fund I in extension; one packaging company left" },
+  l14:{ name:"Severn Ventures", fund:"Fund II", vintage:2017, city:"Cardiff", partner:"Owen Davies", s:2, trig:"No recent exits", m:["p18"], why:"Regional fund, one telecoms company fits" },
+  l15:{ name:"Holloway Partners", fund:"Fund II", vintage:2014, city:"London", partner:"Ruth Adeyemi", s:3, trig:"Fund ending", m:["p19","p15","p9"], why:"Three profitable holdings; LPs expecting distributions" },
+  l16:{ name:"Tamar Growth", fund:"Fund I", vintage:2016, city:"Plymouth", partner:"Ben Hollis", s:2, trig:"Long holds", m:["p6"], why:"Small fund, one dental company held 8 years" },
+  l17:{ name:"Ribble Ventures", fund:"Fund I", vintage:2017, city:"Preston", partner:"Kate Moran", s:1, trig:"No recent exits", m:["p10"], why:"One match, little public data on the fund" },
+};
+
+/* ---------- Day states ---------- */
+/* today: lead order (sliced to leads-a-day). fresh: NEW. carried: id -> first day. sent: already ticked. inplay: [id, outcome, when]. */
+const D1 = { date:"Thu 5 Nov", today:["l1","l2","l3","l4","l5","l6","l7","l8","l9","l10"], fresh:[], inplay:[], streak:0, best:0 };
+const D2 = { date:"Fri 6 Nov", today:["l5","l6","l7","l8","l9","l10","l11","l12","l13","l14"], fresh:["l11","l12","l13","l14"],
+             carried:{ l5:"Thu", l6:"Thu", l7:"Thu", l8:"Thu", l9:"Thu", l10:"Thu" }, streak:0, best:0,
+             inplay:[["l1","msg","Thu"],["l2","msg","Thu"],["l3","msg","Thu"],["l4","msg","Thu"]] };
+const D3 = { date:"Mon 9 Nov", today:["l5","l6","l8","l9","l10","l12","l13","l15","l16","l17"], fresh:["l15","l16","l17"], callBanner:true,
+             carried:{ l5:"Thu", l6:"Thu", l8:"Thu", l9:"Thu", l10:"Thu", l12:"Fri", l13:"Fri" }, streak:0, best:0,
+             inplay:[["l1","call","Thu"],["l2","rej","Thu"],["l3","msg","Thu"],["l4","msg","Thu"],["l7","msg","Fri"],["l11","msg","Fri"],["l14","msg","Fri"]] };
+const STATES = {
+  "day-1": D1, "day-2": D2, "day-3": D3,
+  "follow-up": { date:"Wed 18 Nov", today:["l5","l6","l8","l9","l10","l12","l13","l15","l16","l17"], fresh:["l15","l16","l17"],
+    carried:{ l5:"Tue", l6:"Tue", l8:"Tue" }, sent:["l9","l10","l12","l13","l15","l16","l17"], sentFirst:5, streak:9, best:9, quiet:["l3","l4","l7"],
+    inplay:[["l1","call","Thu 5"],["l2","rej","Thu 5"],["l3","msg","Wed 11"],["l4","msg","Wed 11"],["l7","msg","Wed 11"],["l11","msg","Mon 16"],["l14","nore","Fri 6"]] },
+  "missed": { date:"Wed 11 Nov", today:["l5","l6","l8","l9","l10","l12","l13","l15","l16","l17"], fresh:[], missed:"Tuesday", streak:0, best:5,
+    carried:{ l5:"Tue", l6:"Tue", l8:"Tue", l9:"Tue", l10:"Tue", l12:"Tue", l13:"Tue", l15:"Tue", l16:"Tue", l17:"Tue" },
+    inplay:[["l1","call","Thu 5"],["l2","rej","Thu 5"],["l3","msg","Mon 9"],["l4","msg","Mon 9"]] },
+  "missing-data": { ...D1, open:"l8" },
+  "no-leads": { date:"Fri 20 Nov", today:["l5","l9"], fresh:[], carried:{ l5:"Thu", l9:"Thu" }, streak:11, best:11, empty:true, inplay:[["l1","call","Thu 5"],["l15","msg","Wed 18"],["l16","msg","Wed 18"]] },
+  "error": { ...D2, err:true },
+};
+const SPEC = {
+  "onboarding": { h:"Onboarding", p:"He's installed the extension. Sign in, say who he is, then set the search in two halves: which VCs, and which of their portfolio companies count. He also picks 5 or 10 leads a day.",
+    needs:["Sign-in with Google (he uses Gmail)","Profile saved: name, firm, what he offers (feeds the prompt)","Search saved: VC filters + portfolio filters + leads a day","Shown as Later, not MVP: LinkedIn, 7 sports themes"] },
+  "loading": { h:"Loading", p:"Between \"Find my leads\" and the list. Says what it's searching for, so the wait makes sense.",
+    needs:["First Dealroom pull can take a while: run it once, cache the results","Sheeply (Day 0) already pulls a VC's portfolio from Dealroom; reuse it"] },
+  "day-1": { h:"Day 1", p:"Just the list. Each lead is a VC fund, with how many of its portfolio companies match. Tap one for the companies, the partner to contact, links and the prompt.",
+    needs:["Top N from the leads database (N = 5 or 10, his choice), tier 1 first","Per fund: partner, website, partner LinkedIn, matching companies","Partner name and email editable by him; his edits survive the next Dealroom sync (Dealroom rarely has emails)","Sent saves 'contacted' + date"] },
+  "day-2": { h:"Day 2", p:"\"Any replies?\" opens the day. Funds he didn't contact yesterday come first, marked FROM THU. New funds fill the rest.",
+    needs:["Unsent leads roll over, oldest first","Top N skips anything sent or dismissed","Outcome + date saved per lead"] },
+  "day-3": { h:"Day 3", p:"A partner asked for a call. It's the banner at the top.",
+    needs:["Rejected and No reply leads never come back"] },
+  "follow-up": { h:"Two weeks in", p:"A 9-day streak with a few left to send: tap Sent? on the rest to see day 10. Three partners have been quiet for a week; they get a follow-up prompt.",
+    needs:["Days since sent, per lead","Second prompt: the follow-up"] },
+  "missed": { h:"Missed a day", p:"He didn't open it on Tuesday. Everything rolls over. One plain line, no guilt: the streak resets, his best stays.",
+    needs:["Streak and best streak per user","A day counts when all of today's leads are sent or dismissed","Working days only"] },
+  "weekly": { h:"Weekly review", p:"Streak, whether he did his leads each day, how far they got, and one suggested search change from his Not for me reasons.",
+    needs:["Counts per week from saved statuses","Not for me reasons, grouped","Suggested change applies to the saved search"] },
+  "search": { h:"Settings", p:"The onboarding answers, editable any time, including 5 or 10 leads a day. Changes apply from tomorrow.",
+    needs:["Search and leads-a-day editable without code (card 167)"] },
+  "missing-data": { h:"Missing data", p:"Dealroom often won't have EBITDA (Ben's research, card 171). Say so per company. A fund whose matches all have unknown EBITDA can't be tier 1.",
+    needs:["Each figure: reported, estimated or unknown","Tier rule copes with unknown EBITDA"] },
+  "no-leads": { h:"No new leads", p:"Only a few hundred UK VCs fit, so he will run out. Show what's left and one way out: widen the search.",
+    needs:["Database knows when the pool is empty"] },
+  "history": { h:"History", p:"Every lead he's ever been shown, filtered by where it ended up. Open one to change its outcome or add a note. Reached from the History link at the top of every day.",
+    needs:["Keep every lead shown, with its outcome, dates and notes","Read past leads through the API, filtered by outcome"] },
+  "error": { h:"Something broke", p:"Dealroom can't be reached. Keep yesterday's list on screen and keep saving his ticks.",
+    needs:["Cache the last list","Saves go to our database, not Dealroom"] },
+};
+
+/* ---------- Helpers ---------- */
+const gbp = n => n == null ? null : "£" + n.toFixed(1) + "m";
+const tier = s => "Tier " + (4 - s);
+const esc = t => String(t).replace(/[&<>"]/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;" }[c]));
+const OUT = { msg:"Waiting", call:"Call", rej:"Rejected", nore:"No reply", nope:"Not for me" };
+/* Notes per lead, kept across tabs. Two examples so the field reads as real. */
+const NOTES = { l1:"Met Helen at the BVCA dinner in 2024. Call booked for Tue 10am.", l11:"Nadia prefers WhatsApp. Ask about Sable first." };
+const REASONS = ["Portfolio too young","Wrong sector","Bad timing","Know them already"];
+const SPORTS = ["Tennis","Basketball","Fencing","Baseball","Football","Cricket","Golf"];
+const YEAR = 2026;
+/* Client kept anonymous: the prompt shows [Your name] / [Your firm] until he fills them in. */
+const profile = { name:"", company:"", get n() { return this.name || "[Your name]"; }, get c() { return this.company || "[Your firm]"; },
+  offer:"I help boards and founders of profitable, VC-backed companies plan their exit: a sale, a secondary or a buy-out." };
+const params = { perDay:"10", terr:["UK","Second territory"], sectors:["Business services"], fundAge:"7", ebitda:"1", noRaise:"5", stage:"Series A+" };
+const N = () => +params.perDay;
+
+const margin = p => p.ebitda == null ? null : Math.round(p.ebitda / p.rev * 100);
+/* One line of evidence per company: the numbers, then the specific reason it fits an exit now. */
+const evidence = p => `- ${p.n} (${p.sector}): ${gbp(p.rev)} revenue, ${p.ebitda == null ? "EBITDA not public" : `${gbp(p.ebitda)} EBITDA (${margin(p)}% margin)`}, growing ${p.growth}% a year, last raised ${p.last} (${YEAR - p.last} years ago). Why now: ${p.fit}.`;
+const prompt = (l, follow) => {
+  const best = [...l.m].map(id => P[id]).sort((a, b) => (b.ebitda ?? -1) - (a.ebitda ?? -1))[0];
+  if (follow) return `I'm ${profile.n} from ${profile.c}. A week ago I emailed ${l.partner} at ${l.name} about ${best.n} and haven't heard back.
+Fact to use: ${best.fit}.
+Write a two-sentence follow-up that adds one new, useful point about ${best.n}'s options. No guilt, same ask: a 20-minute call.`;
+  return `I'm ${profile.n}, founder of ${profile.c}. ${profile.offer}
+
+Write a short first email to ${l.partner}, partner at ${l.name}. ${l.why}.
+
+Their holdings that fit:
+${l.m.map(id => evidence(P[id])).join("\n")}
+
+Why these are a fit: they're profitable and growing on their own cash, so they don't need another venture round, and the fund needs to return money to its investors. That makes them better suited to a sale, a secondary or a buy-out than to a Series C. That's the gap I fill.
+
+Check recent news on ${l.name} and on ${best.n} first, and use one relevant detail. Lead with ${best.n} and say specifically why it fits, using its numbers. Mention the others in one line at most. Peer to peer, under 120 words, no jargon. One ask: a 20-minute call about which of these might want options in the next two years.`;
+};
+
+/* ---------- Icons ---------- */
+const ICON = {
+  web:`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6.2"/><path d="M1.8 8h12.4M8 1.8c2 2.2 2 10.2 0 12.4M8 1.8c-2 2.2-2 10.2 0 12.4"/></svg>`,
+  li:`<svg viewBox="0 0 16 16" fill="currentColor"><rect x="1.5" y="1.5" width="13" height="13" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.4"/><rect x="4.3" y="6.6" width="1.6" height="5"/><circle cx="5.1" cy="4.7" r="1"/><path d="M7.4 6.6h1.5v.8c.4-.6 1-1 1.9-1 1.4 0 2 .9 2 2.4v2.8h-1.6V9c0-.8-.3-1.2-.9-1.2-.7 0-1.3.5-1.3 1.4v2.4H7.4z"/></svg>`,
+  news:`<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="2.5" width="12" height="11" rx="1.5"/><path d="M4.5 5.5h7M4.5 8h7M4.5 10.5h4"/></svg>`,
+};
+function links(l) {
+  const q = encodeURIComponent;
+  return `<div class="links">
+    <a href="https://www.google.com/search?q=${q(l.name)}" target="_blank" rel="noopener" title="${esc(l.name)} website">${ICON.web}<span>Website</span></a>
+    <a href="https://www.linkedin.com/search/results/people/?keywords=${q(l.partner + " " + l.name)}" target="_blank" rel="noopener" title="${esc(l.partner)} on LinkedIn">${ICON.li}<span>${esc(l.partner.split(" ")[0])}</span></a>
+    <a href="https://news.google.com/search?q=${q('"' + l.name + '"')}" target="_blank" rel="noopener" title="Recent news on ${esc(l.name)}">${ICON.news}<span>News</span></a>
+  </div>`;
+}
+
+/* ---------- View state ---------- */
+let view = "onboarding", open = null, obStep = 0, repliesOpen = false, suggestion = null;
+let S = {};
+const phone = document.getElementById("phone"), spec = document.getElementById("spec");
+const SIG = s => `<span class="sig" data-s="${s}" role="img" aria-label="${tier(s)}"><span></span><span></span><span></span></span>`;
+
+function metaLine(l) {
+  const unk = l.m.every(id => P[id].ebitda == null);
+  return `${l.fund} · ${l.vintage} · <b>${l.m.length} ${l.m.length === 1 ? "match" : "matches"}</b>${unk ? ` · <span class="unk">EBITDA unknown</span>` : ""}`;
+}
+function portfolio(l) {
+  return `<table class="port"><thead><tr><th>Matching company</th><th>EBITDA</th><th>Last round</th></tr></thead><tbody>
+    ${l.m.map(id => { const p = P[id]; return `<tr><td><b>${esc(p.n)}</b><span>${esc(p.sector)} · rev ${gbp(p.rev)} · +${p.growth}%</span></td>
+      <td${p.ebitda == null ? ' class="unk"' : ""}>${p.ebitda == null ? "Unknown" : `${gbp(p.ebitda)}<span>${margin(p)}% margin</span>`}</td><td>${p.last}<span>${YEAR - p.last} yrs</span></td></tr>
+      <tr class="fit"><td colspan="3">${esc(p.fit)}</td></tr>`; }).join("")}
+  </tbody></table>`;
+}
+function squig(id, follow) {
+  return `<div class="squig">
+      <svg aria-hidden="true"><rect x="2" y="2" rx="12" filter="url(#wobble)"/></svg>
+      <span class="tag">${follow ? "Follow-up prompt" : "Prompt for Claude"}</span>
+      <p id="p-${id}">${esc(prompt(L[id], follow))}</p>
+      <button class="copy" data-act="copy" data-id="${id}">Copy prompt</button>
+    </div>`;
+}
+/* Contact: Dealroom suggests the partner; he can correct the name and add or fix the email.
+   Edits belong to him and must survive the next Dealroom sync. */
+const EMAILS = { l1:"helen.marsh@thornbury.example", l3:"priya@larkspur.example", l11:"nadia.hussain@kestrel.example", l15:"r.adeyemi@holloway.example" };
+for (const id in L) { L[id].email = EMAILS[id] || ""; L[id].source = { partner: L[id].partner, email: L[id].email }; }
+let editContact = null;
+function contactBlock(id) {
+  const l = L[id];
+  const edited = l.partner !== l.source.partner || l.email !== l.source.email;
+  if (editContact === id) return `<form class="contact-edit" data-id="${id}">
+      <span class="lbl">Contact</span>
+      <div class="field"><label for="cn-${id}">Partner's name</label><input id="cn-${id}" value="${esc(l.partner)}" autocomplete="off" required></div>
+      <div class="field"><label for="ce-${id}">Email</label><input id="ce-${id}" type="email" value="${esc(l.email)}" placeholder="name@fund.com" autocomplete="off"></div>
+      <div class="contact-actions"><button class="btn" type="submit">Save</button><button class="btn ghost" type="button" data-act="cancel-contact" data-id="${id}">Cancel</button>
+      ${edited ? `<button class="link" type="button" data-act="reset-contact" data-id="${id}">Use Dealroom's</button>` : ""}</div>
+    </form>`;
+  return `<div class="partner">
+      <span class="who-c"><span class="lbl">Contact${edited ? ` · <span class="unk">edited by you</span>` : ""}</span>
+        <b>${esc(l.partner)}</b>, partner
+        <span class="email">${l.email ? `<span class="addr" id="em-${id}">${esc(l.email)}</span> <button class="link" data-act="copy-email" data-id="${id}">Copy</button>` : `<span class="m-none">No email yet</span>`}
+        · <button class="link" data-act="edit-contact" data-id="${id}">${l.email ? "Edit" : "Add email"}</button></span>
+      </span>${links(l)}</div>`;
+}
+function detail(id, st, play) {
+  const l = L[id], quiet = (st.quiet || []).includes(id);
+  const anyUnk = l.m.some(x => P[x].ebitda == null);
+  let tail;
+  if (play && play[1] === "nope") {
+    tail = `<p class="hint">Not for me${play[3] ? ` · ${esc(play[3])}` : ""}</p>`;
+  } else if (play) {
+    tail = `<div class="outcome" style="grid-template-columns:repeat(4,1fr)" role="group" aria-label="What happened with ${esc(l.name)}">
+      ${["msg","call","rej","nore"].map(k => `<button data-act="out" data-id="${id}" data-st="${k}" aria-pressed="${play[1]===k}">${OUT[k]}</button>`).join("")}
+    </div>`;
+  } else {
+    const n = st.nope[id];
+    tail = n === undefined
+      ? `<div class="nope-row"><button class="link" data-act="nope" data-id="${id}">Not for me</button></div>`
+      : `<p class="hint">Not for me. Why? Optional, it tunes your search.</p>
+         <div class="reasons">${REASONS.map(r => `<button data-act="reason" data-id="${id}" data-r="${r}" aria-pressed="${n===r}">${r}</button>`).join("")}</div>
+         <div class="nope-row"><button class="link" data-act="unnope" data-id="${id}">Undo</button></div>`;
+  }
+  return `<div class="more">
+    <div class="chips"><span class="chip">${tier(l.s)}</span><span class="chip trig">${l.trig}</span><span class="chip">${l.city}</span></div>
+    ${contactBlock(id)}
+    ${portfolio(l)}
+    ${anyUnk ? `<p class="hint">Unknown = not in Dealroom. Check Companies House.</p>` : ""}
+    <p class="why">${esc(l.why)}</p>
+    <div class="field"><label for="note-${id}">Notes</label><textarea class="notes" id="note-${id}" data-id="${id}" rows="2" placeholder="Who knows them, what they said, when to chase">${esc(NOTES[id] || "")}</textarea></div>
+    ${play ? tail + (play[1] === "nope" ? "" : squig(id, quiet)) : squig(id) + tail}
+  </div>`;
+}
+function leadRow(id, st) {
+  const l = L[id], isOpen = open === id, sent = st.sent.includes(id), nope = st.nope[id] !== undefined;
+  const right = nope ? `<span class="pill" data-st="nope">Not for me</span>`
+    : `<button class="sent" data-act="sent" data-id="${id}" aria-pressed="${sent}" aria-label="Sent to ${esc(l.name)}">${sent ? "Sent ✓" : "Sent?"}</button>`;
+  return `<li class="lead${sent ? " done" : ""}${nope ? " is-nope done" : ""}">
+    <div class="rowwrap">
+      <button class="row" data-act="open" data-id="${id}" aria-expanded="${isOpen}">${SIG(l.s)}
+        <span class="who"><span class="name">${esc(l.name)}${st.fresh.includes(id) ? `<span class="new-dot">NEW</span>` : ""}${st.carried?.[id] ? `<span class="from">FROM ${st.carried[id].toUpperCase()}</span>` : ""}</span><span class="meta">${metaLine(l)}</span></span>
+      </button>${right}
+    </div>
+    ${isOpen ? detail(id, st) : ""}
+  </li>`;
+}
+function playRow(item, st) {
+  const [id, out, when] = item, l = L[id], isOpen = open === id, quiet = out === "msg" && (st.quiet || []).includes(id);
+  return `<li class="lead${out === "rej" || out === "nore" || out === "nope" ? " is-rej" : ""}">
+    <div class="rowwrap">
+      <button class="row" data-act="open" data-id="${id}" aria-expanded="${isOpen}">${SIG(l.s)}
+        <span class="who"><span class="name">${esc(l.name)}${NOTES[id] ? `<span class="from" title="Has notes">✎</span>` : ""}</span><span class="meta">${esc(l.partner)} · ${out === "nope" ? "shown" : "sent"} ${when}</span></span>
+      </button>
+      <span class="pill" data-st="${quiet ? "quiet" : out}">${quiet ? "Quiet 7d" : OUT[out]}</span>
+    </div>
+    ${isOpen ? detail(id, st, item) : ""}
+  </li>`;
+}
+function headHtml(title, date, gear = true) {
+  return `<div class="island"></div><div class="head"><h1>${title}</h1><span class="r"><span class="date">${date}</span>${gear ? `${view === "history" ? "" : `<button class="gear" data-act="go" data-v="history">History</button>`}<button class="gear" data-act="go" data-v="search">Settings</button>` : ""}</span></div>`;
+}
+
+/* History: every lead he's ever been shown, as of Fri 20 Nov. [id, outcome, when shown/sent, not-for-me reason] */
+const HISTORY = [["l1","call","Thu 5"],["l11","call","Fri 6"],["l3","msg","Thu 5"],["l7","msg","Fri 6"],["l15","msg","Wed 18"],["l16","msg","Wed 18"],["l12","msg","Mon 9"],
+  ["l2","rej","Thu 5"],["l13","rej","Mon 9"],["l4","nore","Thu 5"],["l14","nore","Fri 6"],["l6","nope","Fri 6","Wrong sector"],["l9","nope","Mon 9","Portfolio too young"]];
+const HFILTERS = [["all","All",() => true],["msg","Waiting",o => o === "msg"],["call","Calls",o => o === "call"],["closed","Closed",o => o === "rej" || o === "nore"],["nope","Not for me",o => o === "nope"]];
+let hFilter = "all";
+function renderHistory() {
+  const st = S.history;
+  const f = HFILTERS.find(x => x[0] === hFilter);
+  const rows = st.inplay.filter(x => f[2](x[1]));
+  phone.innerHTML = headHtml("History", "Since 5 Nov") + `
+    <div class="toggles" style="padding:0 4px 10px" role="group" aria-label="Filter history">
+      ${HFILTERS.map(([k, label, fn]) => `<button data-act="hf" data-v="${k}" aria-pressed="${hFilter===k}">${label} ${st.inplay.filter(x => fn(x[1])).length}</button>`).join("")}
+    </div>
+    <ul class="leads">${rows.map(x => playRow(x, st)).join("") || `<li class="empty"><p>Nothing here yet.</p></li>`}</ul>`;
+  sizeSquiggles();
+}
+
+function renderDay(key) {
+  const st = S[key], n = N();
+  const today = st.today.slice(0, n);
+  const order = { call:0, msg:1, rej:2, nore:3 };
+  const play = [...st.inplay].sort((a, b) => order[a[1]] - order[b[1]]);
+  const waiting = st.inplay.filter(x => x[1] === "msg");
+  const quietN = waiting.filter(x => (st.quiet || []).includes(x[0])).length;
+  const calls = st.callBanner ? st.inplay.filter(x => x[1] === "call") : [];
+  const sentToday = today.filter(id => st.sent.includes(id)).length;
+  const handled = today.filter(id => st.sent.includes(id) || st.nope[id] !== undefined).length;
+  const allDone = handled === today.length;
+  const streakNow = st.streak + (allDone ? 1 : 0);
+  let h = headHtml(`Your ${n}`, st.date);
+  if (streakNow || st.best) h += `<div class="streak" aria-label="Streak">
+      <span class="dots">${Array.from({length:10}, (_, i) => `<i class="${i < Math.min(streakNow, 10) ? "on" : ""}"></i>`).join("")}</span>
+      <span>${streakNow ? `<b>${streakNow}-day streak</b>` : "No streak yet"}${st.best && st.best >= streakNow ? ` · best ${st.best}` : ""}</span></div>`;
+  if (st.missed) h += `<div class="alert warn"><span class="dot"></span><span><b>Missed ${st.missed}</b> · those leads are still here. Do them today to start a new streak.</span></div>`;
+  if (allDone) h += `<div class="welldone"><b>That's your ${n}.</b><span>${streakNow >= 10 ? `${streakNow} days in a row. That's ${streakNow * n} VCs. Nobody else is doing this.` : streakNow > 1 ? `${streakNow} days in a row${streakNow > st.best ? ", your best yet" : ""}. Same again tomorrow.` : "Day one of a streak. Same again tomorrow."}</span></div>`;
+  if (st.err) h += `<div class="alert err"><span class="dot"></span><span><b>Can't reach Dealroom</b> · showing yesterday's list. Your ticks still save.</span></div>`;
+  h += calls.map(c => `<div class="alert"><span class="dot"></span><span><b>Call requested</b> · ${esc(L[c[0]].partner)}, ${esc(L[c[0]].name)}</span></div>`).join("");
+  if (waiting.length) {
+    h += `<button class="ask" data-act="replies" aria-expanded="${repliesOpen}"><span><b>Any replies?</b></span><span class="n">${waiting.length} waiting${quietN ? ` · <span class="unk">${quietN} quiet a week</span>` : ""} ${repliesOpen ? "▴" : "▾"}</span></button>`;
+    if (repliesOpen) h += `<ul class="replies">${waiting.map(([id,, when]) => {
+      const q = (st.quiet || []).includes(id);
+      return `<li><span class="nm">${esc(L[id].partner)} · ${esc(L[id].name)}<span class="${q ? "q" : ""}">${q ? "7 days" : "Sent " + when}</span></span>
+        <div class="outcome" role="group" aria-label="Reply from ${esc(L[id].partner)}">
+          ${["call","rej","nore"].map(k => `<button data-act="out" data-id="${id}" data-st="${k}" aria-pressed="false">${OUT[k]}</button>`).join("")}
+        </div></li>`; }).join("")}</ul>`;
+  }
+  h += `<div class="sublbl"><span>Today</span><span>${handled ? `${sentToday} sent · ${today.length - handled} to go` : ""}</span></div>
+    <ul class="leads">${today.map(id => leadRow(id, st)).join("")}</ul>`;
+  if (st.empty) h += `<div class="empty"><p>That's every VC that matches your search. Widen it to see more tomorrow.</p><button class="btn ghost" data-act="go" data-v="search">Change search</button></div>`;
+  if (play.length) h += `<div class="sublbl"><span>In play</span><span>${play.length}</span></div><ul class="leads">${play.map(x => playRow(x, st)).join("")}</ul>`;
+  phone.innerHTML = h;
+  sizeSquiggles();
+}
+
+function aboutFields() {
+  return `<div class="field"><label for="ob-name">Name</label><input id="ob-name" placeholder="Your name" value="${esc(profile.name)}"></div>
+    <div class="field"><label for="ob-co">Firm</label><input id="ob-co" placeholder="Your firm" value="${esc(profile.company)}"></div>
+    <div class="field"><label for="ob-offer">What you offer</label><input id="ob-offer" value="${esc(profile.offer)}"></div>`;
+}
+function searchFields() {
+  const sel = (id, key, opts, fmt) => `<select id="${id}">${opts.map(v => `<option value="${v}"${params[key]===v?" selected":""}>${fmt(v)}</option>`).join("")}</select>`;
+  const tog = (k, opts) => `<div class="toggles">${opts.map(t => `<button data-act="tog" data-k="${k}" data-v="${t}" aria-pressed="${params[k].includes(t)}">${t}</button>`).join("")}</div>`;
+  return `<div class="field"><span class="lbl">Leads a day</span>
+      <div class="seg2" role="group" aria-label="Leads a day">${["5","10"].map(v => `<button data-act="perday" data-v="${v}" aria-pressed="${params.perDay===v}">${v} a day</button>`).join("")}</div></div>
+    <div class="group-lbl">The VC</div>
+    <div class="field"><span class="lbl">Territory</span>${tog("terr", ["UK","Second territory"])}</div>
+    <div class="field"><label for="ob-fundage">Fund at least</label>${sel("ob-fundage","fundAge",["0","5","7","10"],v=>v==="0"?"Any age":`${v} years old`)}</div>
+    <div class="group-lbl">Their portfolio companies</div>
+    <div class="field"><span class="lbl">Sector</span>${tog("sectors", ["Business services","Healthcare","Software","Industrials"])}</div>
+    <div class="two">
+      <div class="field"><label for="ob-ebitda">Min EBITDA</label>${sel("ob-ebitda","ebitda",["0.5","1","1.5","2","5"],v=>`£${v}m`)}</div>
+      <div class="field"><label for="ob-raise">No round in</label>${sel("ob-raise","noRaise",["3","4","5","7"],v=>`${v}+ years`)}</div>
+    </div>`;
+}
+const LATER_THEME = `<div class="soon" style="flex-direction:column;align-items:stretch">
+    <div style="display:flex;justify-content:space-between;align-items:center"><span>Pick a theme</span><span>Later</span></div>
+    <div class="toggles">${SPORTS.map(t => `<button disabled>${t}</button>`).join("")}</div></div>`;
+
+function renderOnboarding() {
+  const steps = `<div class="steps" aria-label="Step ${obStep + 1} of 3">${[0,1,2].map(i => `<i class="${i <= obStep ? "on" : ""}"></i>`).join("")}</div>`;
+  let body = "";
+  if (obStep === 0) body = `<h2>Welcome to Synergy</h2><p>The VCs sitting on companies ready for an exit, a few every morning.</p>
+    <button class="btn" data-act="next">Sign in with Google</button>
+    <div class="soon"><span>Connect LinkedIn</span><span>Later</span></div>`;
+  if (obStep === 1) body = `<h2>About you</h2><p>Used to write your emails.</p>${aboutFields()}${LATER_THEME}<button class="btn" data-act="next">Next</button>`;
+  if (obStep === 2) body = `<h2>Who you're looking for</h2>${searchFields()}<button class="btn" data-act="go" data-v="loading">Find my leads</button>`;
+  phone.innerHTML = `<div class="island"></div>${steps}<div class="ob">${body}${obStep > 0 ? `<button class="btn ghost" data-act="back">Back</button>` : ""}</div>`;
+}
+function renderLoading() {
+  phone.innerHTML = headHtml(`Your ${N()}`, "Thu 5 Nov", false) +
+    `<p class="hint" style="padding:0 4px 10px">Searching Dealroom: VCs in ${params.terr.join(" + ")}, funds ${params.fundAge}+ years old, holding ${params.sectors.join(", ").toLowerCase()} companies with £${params.ebitda}m+ EBITDA and no round in ${params.noRaise}+ years</p>
+     <div style="display:flex;flex-direction:column;gap:6px">${Array.from({length:N()}, () => `<div class="skel"></div>`).join("")}</div>
+     <button class="btn ghost" style="margin-top:12px" data-act="go" data-v="day-1">Skip to the list</button>`;
+}
+function renderSettings() {
+  phone.innerHTML = headHtml("Settings", "", false) + `<div class="ob">
+    <button class="link" style="align-self:flex-start" data-act="go" data-v="day-1">← Back to your leads</button>
+    <h2>Who you're looking for</h2><p class="hint">Changes apply from tomorrow.</p>${searchFields()}
+    <h2 style="margin-top:6px">About you</h2>${aboutFields()}
+    <div class="soon"><span>Connect LinkedIn</span><span>Later</span></div>${LATER_THEME}
+    <button class="btn" data-act="go" data-v="day-1">Save</button></div>`;
+}
+function renderWeekly() {
+  const n = N(), shown = n * 5;
+  const F = [["Leads shown",shown],["Sent",Math.round(shown*.62)],["Replied",Math.round(shown*.12)],["Calls",Math.round(shown*.04)],["Agreements",0]];
+  const days = [["Mon","p"],["Tue","y"],["Wed","y"],["Thu","y"],["Fri","y"]];
+  phone.innerHTML = headHtml("This week", "9–13 Nov") + `
+    <div class="streak" style="padding-top:2px"><span class="dots">${Array.from({length:10}, (_, i) => `<i class="${i < 4 ? "on" : ""}"></i>`).join("")}</span><span><b>4-day streak</b> · best 6</span></div>
+    <div class="sublbl"><span>Did you do your ${n}?</span><span>4 of 5 days</span></div>
+    <div class="wk">${days.map(([d,c]) => `<div><i class="${c}"></i>${d}</div>`).join("")}</div>
+    <p class="hint" style="padding:6px 4px 0">Full = all ${n} sent or dismissed. Half = some.</p>
+    <div class="sublbl"><span>How far they got</span></div>
+    <div class="funnel">${F.map(([k,v]) => `<div class="frow"><span>${k}</span><span class="track"><span class="fill" style="width:${v/shown*100}%"></span></span><b>${v}</b></div>`).join("")}</div>
+    <div class="sublbl"><span>Not for me</span><span>7</span></div>
+    <div class="suggest">${suggestion === null
+      ? `<span>5 of 7 had a <b>portfolio too young</b>. Only show funds 10+ years old?</span><div class="two"><button class="btn" data-act="sugg" data-v="yes">Change it</button><button class="btn ghost" data-act="sugg" data-v="no">Keep 7 years</button></div>`
+      : `<span>${suggestion === "yes" ? "Done. Funds 10+ years old from tomorrow." : "Kept at 7 years."}</span>`}</div>`;
+}
+function renderSpec() {
+  const s = SPEC[view];
+  spec.innerHTML = `<h2>${s.h}</h2><p>${s.p}</p>
+    <h3>What the build needs here</h3><ul>${s.needs.map(x => `<li>${x}</li>`).join("")}</ul>
+    <p class="note">Prototype with invented funds, partners and companies. Buttons work, but reset when you switch tab (leads a day is kept).</p>`;
+}
+function render() {
+  document.querySelectorAll(".tabs a").forEach(a => a.dataset.v === view ? a.setAttribute("aria-current","page") : a.removeAttribute("aria-current"));
+  if (view === "onboarding") renderOnboarding();
+  else if (view === "loading") renderLoading();
+  else if (view === "search") renderSettings();
+  else if (view === "weekly") renderWeekly();
+  else if (view === "history") renderHistory();
+  else renderDay(view);
+  renderSpec();
+}
+function sizeSquiggles() {
+  document.querySelectorAll(".squig").forEach(b => {
+    const r = b.querySelector("rect"); r.setAttribute("width", Math.max(0, b.clientWidth - 4)); r.setAttribute("height", Math.max(0, b.clientHeight - 4));
+  });
+}
+
+phone.addEventListener("click", e => {
+  const b = e.target.closest("[data-act]"); if (!b) return;
+  const id = b.dataset.id, st = S[view];
+  switch (b.dataset.act) {
+    case "open": open = open === id ? null : id; break;
+    case "sent": st.sent = st.sent.includes(id) ? st.sent.filter(x => x !== id) : [...st.sent, id]; break;
+    case "nope": st.nope[id] = ""; st.sent = st.sent.filter(x => x !== id); break;
+    case "reason": st.nope[id] = st.nope[id] === b.dataset.r ? "" : b.dataset.r; break;
+    case "unnope": delete st.nope[id]; break;
+    case "out": st.inplay = st.inplay.map(x => x[0] === id ? [id, b.dataset.st, x[2]] : x); break;
+    case "replies": repliesOpen = !repliesOpen; break;
+    case "next": obStep = Math.min(2, obStep + 1); break;
+    case "back": obStep = Math.max(0, obStep - 1); break;
+    case "perday": params.perDay = b.dataset.v; break;
+    case "hf": hFilter = b.dataset.v; open = null; break;
+    case "edit-contact": editContact = id; render(); document.getElementById(`cn-${id}`)?.focus(); return;
+    case "cancel-contact": editContact = null; break;
+    case "reset-contact": Object.assign(L[id], { partner: L[id].source.partner, email: L[id].source.email }); editContact = null; break;
+    case "copy-email": {
+      const em = L[id].email, el = document.getElementById(`em-${id}`);
+      const ok = () => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1400); };
+      const fb = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected"; };
+      navigator.clipboard ? navigator.clipboard.writeText(em).then(ok, fb) : fb();
+      return;
+    }
+    case "tog": { const k = b.dataset.k, v = b.dataset.v; params[k] = params[k].includes(v) ? params[k].filter(x => x !== v) : [...params[k], v]; break; }
+    case "sugg": suggestion = b.dataset.v; if (suggestion === "yes") params.fundAge = "10"; break;
+    case "go": go(b.dataset.v); return;
+    case "copy": {
+      const el = document.getElementById("p-" + id);
+      const ok = () => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy prompt", 1400); };
+      const fb = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected, press ⌘C"; };
+      navigator.clipboard ? navigator.clipboard.writeText(el.textContent).then(ok, fb) : fb();
+      return;
+    }
+  }
+  render();
+  (phone.querySelector(`[data-act="${b.dataset.act}"][data-id="${id}"]`) || phone.querySelector(`[data-act="${b.dataset.act}"][data-v="${b.dataset.v}"]`) || phone.querySelector(`[data-act="open"][data-id="${id}"]`))?.focus();
+});
+phone.addEventListener("submit", e => {
+  const f = e.target.closest(".contact-edit"); if (!f) return;
+  e.preventDefault();
+  if (!f.reportValidity()) return;
+  const id = f.dataset.id;
+  L[id].partner = document.getElementById(`cn-${id}`).value.trim();
+  L[id].email = document.getElementById(`ce-${id}`).value.trim();
+  editContact = null;
+  render();
+  phone.querySelector(`[data-act="edit-contact"][data-id="${id}"]`)?.focus();
+});
+phone.addEventListener("input", e => {
+  if (e.target.matches(".notes")) NOTES[e.target.dataset.id] = e.target.value;
+});
+phone.addEventListener("change", e => {
+  const map = { "ob-ebitda":"ebitda", "ob-raise":"noRaise", "ob-fundage":"fundAge" };
+  if (map[e.target.id]) params[map[e.target.id]] = e.target.value;
+  if (e.target.id === "ob-name") profile.name = e.target.value;
+  if (e.target.id === "ob-co") profile.company = e.target.value;
+  if (e.target.id === "ob-offer") profile.offer = e.target.value;
+});
+document.querySelector(".tabs").addEventListener("click", e => {
+  const a = e.target.closest("a"); if (!a) return;
+  e.preventDefault(); go(a.dataset.v);
+});
+function go(v) {
+  try { history.replaceState(null, "", "#" + v); } catch (err) {}
+  route(v);
+}
+function route(forced) {
+  const h = typeof forced === "string" ? forced : location.hash.slice(1);
+  view = SPEC[h] ? h : "onboarding";
+  const base = STATES[view];
+  if (base) {
+    /* "Two weeks in" leaves a few unsent whichever leads-a-day is picked, so day 10 is one or a few taps away */
+    const pre = base.sent ? base.today.slice(0, N()).slice(-Math.max(0, N() - 3)) : [];
+    S[view] = { ...structuredClone(base), sent: pre, nope: {} };
+  }
+  if (view === "history") { S.history = { inplay: structuredClone(HISTORY), quiet: [], sent: [], nope: {} }; hFilter = "all"; }
+  open = base?.open || (view === "day-3" ? "l1" : null);
+  repliesOpen = view === "day-2" || view === "follow-up";
+  suggestion = null; editContact = null;
+  if (view === "onboarding") obStep = 0;
+  render();
+  window.scrollTo?.(0, 0);
+}
+addEventListener("hashchange", () => route());
+addEventListener("resize", sizeSquiggles);
+route();
+</script>
