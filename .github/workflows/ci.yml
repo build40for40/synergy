@@ -1,0 +1,27 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Check worker and extension
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npx wrangler deploy --dry-run
+      - run: npm run extension:package
+      - name: Validate manifest
+        run: |
+          jq -e '.manifest_version == 3 and (.name | length > 0) and (.version | test("^[0-9]{1,5}([.][0-9]{1,5}){0,3}$"))' extension/manifest.json
