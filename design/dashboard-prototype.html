@@ -1,51 +1,49 @@
 <title>Synergy Daily Ten</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Pinyon+Script&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Cormorant+Garamond:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
 /* Layout: state tabs on top, one phone-sized Chrome side panel in the middle, a short note on that state beside it.
-   Skin: Ben's Synergy boat club (card 173). Walnut changing room by default, parchment when the device is in light mode.
-   Colour values are the standard ones for the names on card 173; swap in Ben's exact values once his draft is shared.
-   Token roles: --lime = the action colour (brass), --pink = claret, --yellow = gilt. Names kept so the rest of the CSS is unchanged. */
+   Skin: Ben's Synergy brand, draft 2 (card 173): slick corporate finance. Onyx and deep blues, ivory text,
+   dark oak as the only warm accent (panel top strip, open lead's spine, well-done card), at most 5% of a screen.
+   Ben's draft is private, so these colour values are close stand-ins for his named palette
+   (onyx, midnight, harbour, steel, ivory, stone, dark oak, signal); swap in his exact values once shared.
+   Token roles: --lime = the action colour (ivory on dark, harbour on light). Names kept so the rest of the CSS is unchanged. */
 :root {
-  --page: #24160d; --phone: #3a2414; --tile: #4a2f1b; --line: #5f3e24; --edge: #8a6a3a;
-  --text: #f3ead3; --sub: #dccfae; --muted: #b39f78;
-  --lime: #c9a227; --lime-ink: #1c140c; --yellow: #e0c068; --pink: #d0607a;
-  --squiggle: #e0c068; --club: #1f5a3a; --club-ink: #f3ead3;
-  --s-msg: #a9bde0; --s-call: #7cc495; --s-rej: #e07a92;
+  --page: #0a0c10; --phone: #0f1b2d; --tile: #13253b; --line: #1f3550; --edge: #2f4a6b;
+  --text: #f1ece2; --sub: #d7d5d2; --muted: #8d9aad;
+  --lime: #f1ece2; --lime-ink: #0a0c10; --yellow: #c69467; --pink: #d07878;
+  --squiggle: #b98a5e; --club: #07243f; --club-ink: #f1ece2; --oak: #6b4423;
+  --s-msg: #8fb3e0; --s-call: #5fb58c; --s-rej: #d07878;
   --logo-a: #a6e22e; --logo-b: #ffd400; --logo-c: #ff7fcf;
-  --grain: rgba(0,0,0,.18);
-  --display: "Cinzel", "Trajan Pro", Georgia, serif;
-  --serif: "EB Garamond", Garamond, Georgia, serif;
-  --script: "Pinyon Script", "Snell Roundhand", cursive;
+  --display: "Barlow Condensed", "Arial Narrow", sans-serif;
+  --head: "Cormorant Garamond", Garamond, Georgia, serif;
+  --serif: "IBM Plex Sans", "Helvetica Neue", Arial, sans-serif;
   --mono: var(--serif);
   color-scheme: dark;
 }
 @media (prefers-color-scheme: light) { :root:not([data-theme="dark"]) {
-  --page: #e6dabd; --phone: #f6efdc; --tile: #fbf6e8; --line: #dccdaa; --edge: #a8894a;
-  --text: #1b1b1f; --sub: #3f3528; --muted: #6b5c44;
-  --lime: #7d5f0e; --lime-ink: #fbf6e8; --yellow: #7d5f0e; --pink: #7f1734;
-  --squiggle: #7d5f0e; --club: #004225; --club-ink: #f6efdc;
-  --s-msg: #1d3461; --s-call: #004225; --s-rej: #7f1734;
+  --page: #e9e6e1; --phone: #f7f5f1; --tile: #ffffff; --line: #d7d5d2; --edge: #a9afb8;
+  --text: #0a0c10; --sub: #2a3442; --muted: #5c6675;
+  --lime: #07243f; --lime-ink: #f7f5f1; --yellow: #6b4423; --pink: #8e2e2e;
+  --squiggle: #7a4e2b; --club: #07243f; --club-ink: #f1ece2; --oak: #5a3a22;
+  --s-msg: #1f4e8a; --s-call: #1e7a50; --s-rej: #9b2c2c;
   --logo-a: #4f7a0a; --logo-b: #b88f00; --logo-c: #c2408f;
-  --grain: rgba(90,60,20,.06);
   color-scheme: light; } }
 :root[data-theme="light"] {
-  --page: #e6dabd; --phone: #f6efdc; --tile: #fbf6e8; --line: #dccdaa; --edge: #a8894a;
-  --text: #1b1b1f; --sub: #3f3528; --muted: #6b5c44;
-  --lime: #7d5f0e; --lime-ink: #fbf6e8; --yellow: #7d5f0e; --pink: #7f1734;
-  --squiggle: #7d5f0e; --club: #004225; --club-ink: #f6efdc;
-  --s-msg: #1d3461; --s-call: #004225; --s-rej: #7f1734;
+  --page: #e9e6e1; --phone: #f7f5f1; --tile: #ffffff; --line: #d7d5d2; --edge: #a9afb8;
+  --text: #0a0c10; --sub: #2a3442; --muted: #5c6675;
+  --lime: #07243f; --lime-ink: #f7f5f1; --yellow: #6b4423; --pink: #8e2e2e;
+  --squiggle: #7a4e2b; --club: #07243f; --club-ink: #f1ece2; --oak: #5a3a22;
+  --s-msg: #1f4e8a; --s-call: #1e7a50; --s-rej: #9b2c2c;
   --logo-a: #4f7a0a; --logo-b: #b88f00; --logo-c: #c2408f;
-  --grain: rgba(90,60,20,.06);
   color-scheme: light; }
 :root[data-theme="dark"] {
-  --page: #24160d; --phone: #3a2414; --tile: #4a2f1b; --line: #5f3e24; --edge: #8a6a3a;
-  --text: #f3ead3; --sub: #dccfae; --muted: #b39f78;
-  --lime: #c9a227; --lime-ink: #1c140c; --yellow: #e0c068; --pink: #d0607a;
-  --squiggle: #e0c068; --club: #1f5a3a; --club-ink: #f3ead3;
-  --s-msg: #a9bde0; --s-call: #7cc495; --s-rej: #e07a92;
+  --page: #0a0c10; --phone: #0f1b2d; --tile: #13253b; --line: #1f3550; --edge: #2f4a6b;
+  --text: #f1ece2; --sub: #d7d5d2; --muted: #8d9aad;
+  --lime: #f1ece2; --lime-ink: #0a0c10; --yellow: #c69467; --pink: #d07878;
+  --squiggle: #b98a5e; --club: #07243f; --club-ink: #f1ece2; --oak: #6b4423;
+  --s-msg: #8fb3e0; --s-call: #5fb58c; --s-rej: #d07878;
   --logo-a: #a6e22e; --logo-b: #ffd400; --logo-c: #ff7fcf;
-  --grain: rgba(0,0,0,.18);
   color-scheme: dark; }
 
 * { box-sizing: border-box; }
@@ -246,37 +244,49 @@ ul.leads { list-style: none; margin: 0; padding: 0; display: flex; flex-directio
 .seg2 button[aria-pressed="true"] { border-color: var(--lime); background: var(--lime); color: var(--lime-ink); font-weight: 700; }
 .group-lbl { font-size: 11px; font-weight: 700; color: var(--text); border-top: 1px solid var(--line); padding-top: 12px; }
 
-/* ---------- Boat club skin (card 173) ---------- */
-body { font-family: var(--serif); font-size: 14.5px; font-variant-numeric: lining-nums;
-  background-color: var(--page);
-  background-image: repeating-linear-gradient(90deg, transparent 0 7px, var(--grain) 7px 8px, transparent 8px 19px, var(--grain) 19px 20px, transparent 20px 41px); }
-.head h1, .ob h2, .spec h2, .tabs a, .sublbl, .pill, .sent, .chip, .tag, .lbl, .field label, .field .lbl, .group-lbl, .copy, .btn, .outcome button, .seg2 button, .port th, .stats dt, .frow span, .wk div, .streak b, .ask b, .alert b, .new-dot, .from, .gear { font-family: var(--display); }
-.head h1 { font-size: 21px; letter-spacing: .04em; display: flex; align-items: center; gap: 8px; }
-.head h1::before { content: ""; width: 22px; height: 25px; flex: none; background: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2064%2072%22%3E%3Cpath%20d%3D%22M8%206h48v26c0%2018-12%2030-24%2036C20%2062%208%2050%208%2032z%22%20fill%3D%22%231d3461%22%20stroke%3D%22%23c9a227%22%20stroke-width%3D%223%22/%3E%3Cpath%20d%3D%22M32%206h24v26c0%2018-12%2030-24%2036z%22%20fill%3D%22%231f5a3a%22/%3E%3Cpath%20d%3D%22M8%206h48v26c0%2018-12%2030-24%2036C20%2062%208%2050%208%2032z%22%20fill%3D%22none%22%20stroke%3D%22%23c9a227%22%20stroke-width%3D%223%22/%3E%3Cg%20stroke%3D%22%23e0c068%22%20stroke-width%3D%223.2%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M18%2016l28%2034M46%2016L18%2050%22/%3E%3C/g%3E%3Cg%20fill%3D%22%23e0c068%22%3E%3Cpath%20d%3D%22M44%2046l6%208-4%202-5-8z%22/%3E%3Cpath%20d%3D%22M20%2046l-6%208%204%202%205-8z%22/%3E%3C/g%3E%3C/svg%3E") center / contain no-repeat; }
-.spec h2, .ob h2 { letter-spacing: .03em; }
-.phone { border: 2px solid var(--edge); box-shadow: inset 0 0 0 4px var(--phone), inset 0 0 0 5px var(--line), 0 30px 60px -30px rgba(0,0,0,.6); }
-.island { background: var(--tile); border-color: var(--edge); }
-.lead { border-radius: 6px; border-color: var(--line); box-shadow: inset 0 1px 0 color-mix(in oklab, var(--edge) 35%, transparent); }
-.row { border-radius: 6px; }
-.name { font-family: var(--serif); font-weight: 600; font-size: 16px; }
-.meta { font-size: 12.5px; }
+/* Editable contact */
+.partner .who-c { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.partner .email { font-size: 12px; color: var(--sub); overflow-wrap: anywhere; }
+.partner .email .link { font-size: 11px; padding: 0 2px; }
+.m-none { color: var(--muted); font-style: italic; }
+.contact-edit { display: flex; flex-direction: column; gap: 8px; padding: 10px; border: 1px solid var(--edge); border-radius: 6px; background: var(--phone); }
+.contact-edit input { font: inherit; font-size: 13px; color: var(--text); background: var(--tile); border: 1px solid var(--line); border-radius: 6px; padding: 7px 9px; width: 100%; }
+.contact-edit input:focus-visible { outline: 2px solid var(--lime); outline-offset: 1px; }
+.contact-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.contact-actions .btn { width: auto; padding: 8px 14px; }
+
+/* ---------- Synergy skin, Ben's draft 2 (card 173) ---------- */
+body { font-family: var(--serif); font-size: 13.5px; font-variant-numeric: lining-nums tabular-nums; background: var(--page); }
+.head h1, .ob h2, .spec h2, .welldone b { font-family: var(--head); font-weight: 600; letter-spacing: .01em; }
+.tabs a, .sublbl, .pill, .sent, .chip, .tag, .lbl, .field label, .field .lbl, .group-lbl, .copy, .btn, .outcome button, .seg2 button, .port th, .stats dt, .frow span, .wk div, .ask b, .alert b, .new-dot, .from, .gear, .streak b { font-family: var(--display); font-weight: 600; letter-spacing: .06em; }
+.sent, .pill, .chip, .tag, .sublbl, .port th, .stats dt, .new-dot, .from, .btn, .copy, .outcome button, .tabs a { text-transform: uppercase; }
+.head h1 { font-size: 24px; display: flex; align-items: center; gap: 8px; white-space: nowrap; }
+.head { flex-wrap: wrap; gap: 2px 12px; }
+.head .r { flex-wrap: wrap; justify-content: flex-end; gap: 4px 10px; }
+.head .date { white-space: nowrap; }
+/* The merge mark: two lines meeting and carrying on as one. */
+.head h1::before { content: ""; width: 20px; height: 20px; flex: none; background: var(--text);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M3%206c6%200%207%206%2011%206h7M3%2018c6%200%207-6%2011-6%22/%3E%3C/svg%3E") center / contain no-repeat;
+          mask: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%23000%22%20stroke-width%3D%222.4%22%20stroke-linecap%3D%22round%22%3E%3Cpath%20d%3D%22M3%206c6%200%207%206%2011%206h7M3%2018c6%200%207-6%2011-6%22/%3E%3C/svg%3E") center / contain no-repeat; }
+.spec h2 { font-size: 28px; } .ob h2 { font-size: 22px; }
+.phone { border: 1px solid var(--edge); border-top: 3px solid var(--oak); box-shadow: 0 30px 60px -30px rgba(0,0,0,.6); }
+.island { background: var(--page); border-color: var(--line); }
+.lead { border-radius: 8px; border-color: var(--line); }
+.lead:has(.more) { box-shadow: inset 3px 0 0 var(--oak); }
+.row { border-radius: 8px; }
+.name { font-family: var(--serif); font-weight: 600; font-size: 14px; }
+.meta { font-size: 11.5px; }
 .sig span { background: var(--line); }
-.sent, .pill, .chip, .tabs a, .toggles button, .seg2 button, .outcome button, .links a { border-radius: 4px; }
-.sent { letter-spacing: .08em; }
-.btn, .copy, .squig .copy { border-radius: 4px; letter-spacing: .06em; }
-.welldone { background: var(--club); color: var(--club-ink); border: 1px solid var(--edge); border-radius: 6px; }
-.welldone b { font-family: var(--script); font-size: 28px; font-weight: 400; line-height: 1.1; }
-.ask, .alert, .replies, .empty, .suggest, .squig { border-radius: 6px; }
-.squig .tag { font-size: 10px; }
-.squig p { font-size: 13px; }
-.port, .stats, .notes { font-family: var(--serif); }
-.port td { font-size: 12.5px; }
-.port tr.fit td { font-style: italic; font-size: 12px; }
-.port tr.fit td::before { font-style: normal; font-family: var(--display); font-size: 9.5px; }
-.why { font-style: italic; }
+.sent, .pill, .chip, .tabs a, .toggles button, .seg2 button, .outcome button, .links a { border-radius: 999px; }
+.btn, .copy, .squig .copy { border-radius: 999px; }
+.welldone { background: var(--club); color: var(--club-ink); border-left: 3px solid var(--oak); border-radius: 8px; }
+.welldone b { font-size: 22px; font-weight: 600; line-height: 1.1; }
+.ask, .alert, .replies, .empty, .suggest, .squig { border-radius: 8px; }
+.squig p { font-size: 12px; }
+.port td { font-size: 11.5px; }
+.port tr.fit td::before { font-family: var(--display); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
 .streak .dots i { border-radius: 1px; width: 4px; height: 12px; }
-.spec { font-size: 15px; }
-.note { font-style: italic; }
+.spec { font-size: 14px; }
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -392,7 +402,7 @@ const SPEC = {
   "loading": { h:"Loading", p:"Between \"Find my leads\" and the list. Says what it's searching for, so the wait makes sense.",
     needs:["First Dealroom pull can take a while: run it once, cache the results","Sheeply (Day 0) already pulls a VC's portfolio from Dealroom; reuse it"] },
   "day-1": { h:"Day 1", p:"Just the list. Each lead is a VC fund, with how many of its portfolio companies match. Tap one for the companies, the partner to contact, links and the prompt.",
-    needs:["Top N from the leads database (N = 5 or 10, his choice), tier 1 first","Per fund: partner, website, partner LinkedIn, matching companies","Sent saves 'contacted' + date"] },
+    needs:["Top N from the leads database (N = 5 or 10, his choice), tier 1 first","Per fund: partner, website, partner LinkedIn, matching companies","Partner name and email editable by him; his edits survive the next Dealroom sync (Dealroom rarely has emails)","Sent saves 'contacted' + date"] },
   "day-2": { h:"Day 2", p:"\"Any replies?\" opens the day. Funds he didn't contact yesterday come first, marked FROM THU. New funds fill the rest.",
     needs:["Unsent leads roll over, oldest first","Top N skips anything sent or dismissed","Outcome + date saved per lead"] },
   "day-3": { h:"Day 3", p:"A partner asked for a call. It's the banner at the top.",
@@ -491,6 +501,28 @@ function squig(id, follow) {
       <button class="copy" data-act="copy" data-id="${id}">Copy prompt</button>
     </div>`;
 }
+/* Contact: Dealroom suggests the partner; he can correct the name and add or fix the email.
+   Edits belong to him and must survive the next Dealroom sync. */
+const EMAILS = { l1:"helen.marsh@thornbury.example", l3:"priya@larkspur.example", l11:"nadia.hussain@kestrel.example", l15:"r.adeyemi@holloway.example" };
+for (const id in L) { L[id].email = EMAILS[id] || ""; L[id].source = { partner: L[id].partner, email: L[id].email }; }
+let editContact = null;
+function contactBlock(id) {
+  const l = L[id];
+  const edited = l.partner !== l.source.partner || l.email !== l.source.email;
+  if (editContact === id) return `<form class="contact-edit" data-id="${id}">
+      <span class="lbl">Contact</span>
+      <div class="field"><label for="cn-${id}">Partner's name</label><input id="cn-${id}" value="${esc(l.partner)}" autocomplete="off" required></div>
+      <div class="field"><label for="ce-${id}">Email</label><input id="ce-${id}" type="email" value="${esc(l.email)}" placeholder="name@fund.com" autocomplete="off"></div>
+      <div class="contact-actions"><button class="btn" type="submit">Save</button><button class="btn ghost" type="button" data-act="cancel-contact" data-id="${id}">Cancel</button>
+      ${edited ? `<button class="link" type="button" data-act="reset-contact" data-id="${id}">Use Dealroom's</button>` : ""}</div>
+    </form>`;
+  return `<div class="partner">
+      <span class="who-c"><span class="lbl">Contact${edited ? ` · <span class="unk">edited by you</span>` : ""}</span>
+        <b>${esc(l.partner)}</b>, partner
+        <span class="email">${l.email ? `<span class="addr" id="em-${id}">${esc(l.email)}</span> <button class="link" data-act="copy-email" data-id="${id}">Copy</button>` : `<span class="m-none">No email yet</span>`}
+        · <button class="link" data-act="edit-contact" data-id="${id}">${l.email ? "Edit" : "Add email"}</button></span>
+      </span>${links(l)}</div>`;
+}
 function detail(id, st, play) {
   const l = L[id], quiet = (st.quiet || []).includes(id);
   const anyUnk = l.m.some(x => P[x].ebitda == null);
@@ -511,7 +543,7 @@ function detail(id, st, play) {
   }
   return `<div class="more">
     <div class="chips"><span class="chip">${tier(l.s)}</span><span class="chip trig">${l.trig}</span><span class="chip">${l.city}</span></div>
-    <div class="partner"><span><span class="lbl">Contact</span><b>${esc(l.partner)}</b>, partner</span>${links(l)}</div>
+    ${contactBlock(id)}
     ${portfolio(l)}
     ${anyUnk ? `<p class="hint">Unknown = not in Dealroom. Check Companies House.</p>` : ""}
     <p class="why">${esc(l.why)}</p>
@@ -703,6 +735,16 @@ phone.addEventListener("click", e => {
     case "back": obStep = Math.max(0, obStep - 1); break;
     case "perday": params.perDay = b.dataset.v; break;
     case "hf": hFilter = b.dataset.v; open = null; break;
+    case "edit-contact": editContact = id; render(); document.getElementById(`cn-${id}`)?.focus(); return;
+    case "cancel-contact": editContact = null; break;
+    case "reset-contact": Object.assign(L[id], { partner: L[id].source.partner, email: L[id].source.email }); editContact = null; break;
+    case "copy-email": {
+      const em = L[id].email, el = document.getElementById(`em-${id}`);
+      const ok = () => { b.textContent = "Copied"; setTimeout(() => b.textContent = "Copy", 1400); };
+      const fb = () => { const r = document.createRange(); r.selectNodeContents(el); const s = getSelection(); s.removeAllRanges(); s.addRange(r); b.textContent = "Selected"; };
+      navigator.clipboard ? navigator.clipboard.writeText(em).then(ok, fb) : fb();
+      return;
+    }
     case "tog": { const k = b.dataset.k, v = b.dataset.v; params[k] = params[k].includes(v) ? params[k].filter(x => x !== v) : [...params[k], v]; break; }
     case "sugg": suggestion = b.dataset.v; if (suggestion === "yes") params.fundAge = "10"; break;
     case "go": go(b.dataset.v); return;
@@ -716,6 +758,17 @@ phone.addEventListener("click", e => {
   }
   render();
   (phone.querySelector(`[data-act="${b.dataset.act}"][data-id="${id}"]`) || phone.querySelector(`[data-act="${b.dataset.act}"][data-v="${b.dataset.v}"]`) || phone.querySelector(`[data-act="open"][data-id="${id}"]`))?.focus();
+});
+phone.addEventListener("submit", e => {
+  const f = e.target.closest(".contact-edit"); if (!f) return;
+  e.preventDefault();
+  if (!f.reportValidity()) return;
+  const id = f.dataset.id;
+  L[id].partner = document.getElementById(`cn-${id}`).value.trim();
+  L[id].email = document.getElementById(`ce-${id}`).value.trim();
+  editContact = null;
+  render();
+  phone.querySelector(`[data-act="edit-contact"][data-id="${id}"]`)?.focus();
 });
 phone.addEventListener("input", e => {
   if (e.target.matches(".notes")) NOTES[e.target.dataset.id] = e.target.value;
@@ -747,7 +800,7 @@ function route(forced) {
   if (view === "history") { S.history = { inplay: structuredClone(HISTORY), quiet: [], sent: [], nope: {} }; hFilter = "all"; }
   open = base?.open || (view === "day-3" ? "l1" : null);
   repliesOpen = view === "day-2" || view === "follow-up";
-  suggestion = null;
+  suggestion = null; editContact = null;
   if (view === "onboarding") obStep = 0;
   render();
   window.scrollTo?.(0, 0);
