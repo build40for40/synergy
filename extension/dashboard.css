@@ -203,16 +203,6 @@ select { appearance: none; cursor: pointer; padding-right: 18px; background: no-
 .filters button[aria-pressed="true"] { background: var(--ink); color: var(--card); }
 details summary { cursor: pointer; color: var(--ink-60); font-size: 11px; }
 .saved { font: italic 16px var(--display); }
-.account { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; font: 12px var(--mono); color: var(--ink-60); }
-.account b { overflow-wrap: anywhere; color: var(--ink); }
-
-/* ---------- Sign-in: the landing page hero, small ---------- */
-.signed-out { display: grid; gap: 16px; padding: 22px 0 8px; }
-.signed-out h2 { font: 400 46px/.92 var(--display); letter-spacing: -.025em; }
-.signed-out h2 em { display: inline-block; }
-.signed-out p { font-size: 18px; line-height: 1.45; }
-.signed-out .btn { justify-self: start; }
-.signed-out .error { font: 12px var(--mono); border-left: 1.5px solid var(--ink); padding-left: 10px; }
 .nav[hidden] { display: none; }
 
 /* ---------- Rows deal in on load ---------- */

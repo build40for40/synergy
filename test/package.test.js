@@ -78,21 +78,12 @@ test('the dashboard opens in the side panel, and the panel page ships in the ZIP
   assert.equal(checkManifest(broken).length, 2);
 });
 
-test('the store build signs in with the production WorkOS client and drops the dev key', async () => {
-  const { storeAuth, storeManifest, WORKOS_CLIENTS } = await import('../scripts/package-extension.mjs');
+test('the store build drops the dev key, and there is no sign-in for now', async () => {
+  const { storeManifest } = await import('../scripts/package-extension.mjs');
   const { readFileSync } = await import('node:fs');
-  const source = readFileSync(new URL('../extension/auth.js', import.meta.url), 'utf8');
-  assert.ok(source.includes(WORKOS_CLIENTS.staging), 'unpacked builds use the staging client');
-  const store = storeAuth(source);
-  assert.ok(store.includes(`const CLIENT_ID = '${WORKOS_CLIENTS.production}';`));
-  assert.ok(!store.includes(WORKOS_CLIENTS.staging));
-  assert.throws(() => storeAuth('const CLIENT_ID = "something else";'), /no longer has/);
-
   const manifest = JSON.parse(readFileSync(new URL('../extension/manifest.json', import.meta.url), 'utf8'));
-  assert.ok(manifest.key, 'the unpacked extension pins its ID for the sign-in redirect');
-  assert.ok(manifest.permissions.includes('identity'));
-  assert.ok(manifest.host_permissions.includes('https://api.workos.com/*'));
-  const stored = storeManifest(manifest);
-  assert.equal(stored.key, undefined);
-  assert.ok(stored.host_permissions.includes('https://api.workos.com/*'));
+  assert.ok(manifest.key, 'the unpacked extension keeps a fixed ID');
+  assert.ok(!manifest.permissions.includes('identity'));
+  assert.ok(!manifest.host_permissions.some(origin => origin.includes('workos')));
+  assert.equal(storeManifest(manifest).key, undefined);
 });

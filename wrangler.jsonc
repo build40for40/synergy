@@ -5,9 +5,6 @@
   "account_id": "9b4d3e616e55585a0ae844f424717b43",
   "compatibility_date": "2026-11-05",
   "workers_dev": true,
-  // Sign-in: the production WorkOS client, shared with Joyo and the Naughty List. Public, not a secret.
-  // .dev.vars switches local dev to the staging client. See worker/auth.js.
-  "vars": { "WORKOS_CLIENT_ID": "client_01M6E5ZDQ9XBYYE28XYN7H3XTJ" },
   "d1_databases": [{
     "binding": "DB",
     "database_name": "synergy",

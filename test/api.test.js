@@ -2,12 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { handle } from '../worker/index.js';
 import { upsertCompanies } from '../worker/store.js';
-import { company, database, issuer, keys, signToken } from './helpers.js';
+import { asUser, company, database } from './helpers.js';
 
-// Signed in as user_test unless a test says otherwise (tokens from test/helpers.js stand in for WorkOS).
+// As user_test unless a test says otherwise (an install id from test/helpers.js).
 const call = async (env, path, init = {}, user = 'user_test') => handle(
-  new Request(`http://api${path}`, { ...init, headers: { ...init.headers, Authorization: `Bearer ${await signToken(user)}` } }),
-  env, { keys, issuer });
+  new Request(`http://api${path}`, { ...init, headers: { ...init.headers, ...asUser(user) } }),
+  env);
 
 test('profile round-trips', async () => {
   const env = { DB: database() };

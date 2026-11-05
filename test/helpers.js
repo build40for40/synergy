@@ -51,13 +51,10 @@ export function company(n, overrides = {}) {
   };
 }
 
-// Signed-in requests in tests: a local RS256 key pair stands in for WorkOS's JWKS.
-import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose';
-const { publicKey, privateKey } = await generateKeyPair('RS256');
-export const issuer = 'https://api.workos.com/user_management/client_test';
-export const keys = createLocalJWKSet({ keys: [{ ...(await exportJWK(publicKey)), kid: 'test', alg: 'RS256' }] });
-
-export function signToken(userId, { iss = issuer, exp = '5m' } = {}) {
-  return new SignJWT({}).setProtectedHeader({ alg: 'RS256', kid: 'test' })
-    .setSubject(userId).setIssuer(iss).setIssuedAt().setExpirationTime(exp).sign(privateKey);
+// Requests as a user: a stable install id per test name, sent the way the extension sends it.
+import { createHash } from 'node:crypto';
+export function installId(name) {
+  const h = createHash('sha256').update(name).digest('hex');
+  return `${h.slice(0, 8)}-${h.slice(8, 12)}-4${h.slice(13, 16)}-8${h.slice(17, 20)}-${h.slice(20, 32)}`;
 }
+export const asUser = name => ({ 'X-Synergy-User': installId(name) });

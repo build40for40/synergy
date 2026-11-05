@@ -4,7 +4,7 @@ import { readFileSync } from 'node:fs';
 import { handle } from '../worker/index.js';
 import { DEFAULT_CRITERIA } from '../worker/criteria.js';
 import { streakFrom, updateVcLead, vcLeadHistory, vcLeadsToday } from '../worker/vc-leads.js';
-import { database, issuer, keys, signToken } from './helpers.js';
+import { asUser, database } from './helpers.js';
 
 // Leads, feedback and streaks belong to one signed-in user.
 const U = 'user_test';
@@ -103,8 +103,8 @@ test('history filters by outcome with counts', async () => {
 test('the routes: /vcs/today, PATCH /vcs/:uuid, /vcs/history and leads a day', async () => {
   const env = { DB: fixture() };
   const call = async (path, init = {}) => handle(
-    new Request(`http://api${path}`, { ...init, headers: { ...init.headers, Authorization: `Bearer ${await signToken(U)}` } }),
-    env, { keys, issuer });
+    new Request(`http://api${path}`, { ...init, headers: { ...init.headers, ...asUser(U) } }),
+    env);
   await call('/profile', { method: 'PUT', body: JSON.stringify({ who: 'Broker', leads_per_day: 5 }) });
   assert.equal((await (await call('/profile')).json()).leads_per_day, 5);
   const day = await (await call('/vcs/today')).json();
