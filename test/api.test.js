@@ -2,8 +2,6 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker from '../worker/index.js';
 import { upsertCompanies } from '../worker/store.js';
-import { syncCompanies } from '../worker/sync.js';
-import { TOKEN_URL } from '../worker/dealroom.js';
 import { company, database } from './helpers.js';
 
 const call = (env, path, init) => worker.fetch(new Request(`http://api${path}`, init), env);
@@ -40,27 +38,17 @@ test('serves 10 leads a day, never repeats a company, records feedback', async (
   assert.equal((await call(env, '/leads/9999', { method: 'PATCH', body: '{}' })).status, 404);
 });
 
-test('sync pulls pages into D1 and logs the run', async () => {
-  const env = { DB: database(), DEALROOM_CLIENT_ID: 'id', DEALROOM_API_KEY: 'secret' };
-  const pages = [
-    { data: [company(1), company(2)], page: { next_cursor: 'p2' } },
-    { data: [company(3)], page: { next_cursor: null } }
-  ];
-  let page = 0;
-  const fetch = async url => String(url) === TOKEN_URL
-    ? Response.json({ access_token: 'tok' })
-    : new Response(JSON.stringify(pages[page++]), { headers: { 'X-Credits-Used': '4' } });
-  const result = await syncCompanies(env, { fetch, maxPages: 5 });
-  assert.deepEqual(result, { status: 'ok', companies: 3, credits: 8 });
-  const health = await (await call(env, '/health')).json();
-  assert.equal(health.companies, 3);
-  assert.equal(health.last_sync.status, 'ok');
-});
-
-test('a failed sync is recorded, not swallowed', async () => {
-  const env = { DB: database(), DEALROOM_CLIENT_ID: 'id', DEALROOM_API_KEY: 'secret' };
-  const fetch = async () => new Response('{}', { status: 401 });
-  await assert.rejects(syncCompanies(env, { fetch }));
-  const health = await (await call(env, '/health')).json();
-  assert.equal(health.last_sync.status, 'failed');
+test('ranks filed positive EBITDA first, then no funding, then growth', async () => {
+  const env = { DB: database() };
+  await upsertCompanies(env.DB, [
+    company(1, { employee_count_1y_growth: 90, funding: { total: 5e6, rounds_count: 2 } }),
+    company(2, { employee_count_1y_growth: 5 }),
+    company(3, { employee_count_1y_growth: 50 }),
+    company(4, { employee_count_1y_growth: -10 })
+  ]);
+  await env.DB.prepare("UPDATE companies SET ebitda = 1000000, ebitda_year = 2024 WHERE name = 'Company 2'").run();
+  const { leads } = await (await call(env, '/leads/today')).json();
+  assert.deepEqual(leads.map(lead => lead.name), ['Company 2', 'Company 3', 'Company 4', 'Company 1']);
+  assert.equal(leads[0].ebitda, 1000000);
+  assert.equal(leads[0].ebitda_year, 2024);
 });

@@ -1,5 +1,4 @@
 import { getProfile, leadsFor, saveProfile, updateLead } from './store.js';
-import { syncCompanies } from './sync.js';
 
 // MVP is single-user with no sign-in. Anyone with the URL can read and write;
 // add auth before this holds anything private.
@@ -22,17 +21,13 @@ async function readJson(request) {
 }
 
 export default {
-  async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(syncCompanies(env).then(result => console.log(JSON.stringify({ event: 'dealroom_sync', ...result }))));
-  },
-
   async fetch(request, env) {
     const { pathname } = new URL(request.url);
     const method = request.method;
     if (method === 'OPTIONS') return new Response(null, { status: 204, headers });
 
     if (pathname === '/health' && method === 'GET') {
-      const lastSync = await env.DB.prepare('SELECT started_at, finished_at, status, companies, error FROM sync_runs ORDER BY id DESC LIMIT 1').first();
+      const lastSync = await env.DB.prepare('SELECT started_at, finished_at, status, companies, credits_used, error FROM sync_runs ORDER BY id DESC LIMIT 1').first();
       const companies = await env.DB.prepare('SELECT COUNT(*) AS n FROM companies').first();
       return json({ ok: true, companies: companies.n, last_sync: lastSync });
     }

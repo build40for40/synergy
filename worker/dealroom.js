@@ -18,10 +18,25 @@ export class DealroomError extends Error {
   }
 }
 
-export function createDealroomClient({ clientId, clientSecret, fetch: fetchImpl = fetch, now = Date.now }) {
+const RETRYABLE = new Set([429, 500, 502, 503, 504]);
+
+// `requestsPerSecond` spaces out request starts (Dealroom allows 5 a second per
+// key). 429s and 5xx responses are retried up to `retries` times, waiting for
+// Retry-After (capped at `maxWaitMs`) or a doubling backoff.
+export function createDealroomClient({ clientId, clientSecret, fetch: fetchImpl = fetch, now = Date.now,
+  requestsPerSecond = Infinity, retries = 0, maxWaitMs = 30_000, sleep = ms => new Promise(resolve => setTimeout(resolve, ms)) }) {
   if (!clientId || !clientSecret) throw new Error('Set DEALROOM_CLIENT_ID and DEALROOM_API_KEY.');
   let token = null;
   let tokenExpiresAt = 0;
+  let nextSlot = 0;
+  let credits = 0;
+
+  async function throttle() {
+    if (!Number.isFinite(requestsPerSecond)) return;
+    const slot = Math.max(now(), nextSlot);
+    nextSlot = slot + 1000 / requestsPerSecond;
+    if (slot > now()) await sleep(slot - now());
+  }
 
   async function accessToken() {
     // Refresh a minute early so a token never expires mid-request.
@@ -44,10 +59,22 @@ export function createDealroomClient({ clientId, clientSecret, fetch: fetchImpl 
   }
 
   async function request(path, params = {}) {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await requestOnce(path, params);
+      } catch (error) {
+        if (!(error instanceof DealroomError) || !RETRYABLE.has(error.status) || attempt >= retries) throw error;
+        await sleep(Math.min(maxWaitMs, error.retryAfter ? error.retryAfter * 1000 : 1000 * 2 ** attempt));
+      }
+    }
+  }
+
+  async function requestOnce(path, params) {
     const url = new URL(path, API_BASE);
     for (const [key, value] of Object.entries(params)) {
       if (value !== undefined && value !== null && value !== '') url.searchParams.set(key, String(value));
     }
+    await throttle();
     const response = await fetchImpl(url, {
       headers: {
         Authorization: `Bearer ${await accessToken()}`,
@@ -57,13 +84,14 @@ export function createDealroomClient({ clientId, clientSecret, fetch: fetchImpl 
         'User-Agent': USER_AGENT
       }
     });
-    const credits = Number(response.headers.get('X-Credits-Used')) || 0;
+    const used = Number(response.headers.get('X-Credits-Used')) || 0;
+    credits += used;
     if (!response.ok) {
       const body = await response.json().catch(() => ({}));
       const retryAfter = Number(response.headers.get('Retry-After')) || null;
       throw new DealroomError(response.status, body.error?.code ?? 'HTTP_ERROR', body.error?.message ?? `Dealroom request failed (${response.status}).`, retryAfter);
     }
-    return { body: await response.json(), credits };
+    return { body: await response.json(), credits: used };
   }
 
   return {
@@ -74,6 +102,13 @@ export function createDealroomClient({ clientId, clientSecret, fetch: fetchImpl 
       const { body, credits } = await request('/data/companies', { filter, sort, limit: cursor ? undefined : limit, cursor, view });
       return { companies: body.data ?? [], nextCursor: body.page?.next_cursor ?? null, total: body.page?.total ?? null, credits };
     },
+    // Filed revenue, EBITDA and profit by year, oldest first. About 2 credits a year.
+    async getFinancials(uuid) {
+      const { body, credits } = await request(`/data/companies/${encodeURIComponent(uuid)}/financials`);
+      return { years: body.data ?? [], credits };
+    },
+    // Credits reported by X-Credits-Used across every request so far.
+    creditsUsed: () => credits,
     async getCompany(uuid) {
       const { body, credits } = await request(`/data/companies/${encodeURIComponent(uuid)}`);
       return { company: body.data, credits };
@@ -88,7 +123,10 @@ const numberOrNull = value => (typeof value === 'number' && Number.isFinite(valu
 export function toCompanyRow(company, fetchedAt = new Date().toISOString()) {
   const hq = company.locations?.find(location => location.role === 'hq') ?? null;
   const launchYear = Number.parseInt(String(company.launch_date ?? '').slice(0, 4), 10);
-  const founders = company.founders?.items?.map(item => ({ uuid: item.person?.uuid ?? null, name: item.person?.name ?? null })) ?? null;
+  // No founders listed means Dealroom doesn't know them, so store NULL rather than [].
+  const founders = company.founders?.items?.length
+    ? company.founders.items.map(item => ({ uuid: item.person?.uuid ?? null, name: item.person?.name ?? null }))
+    : null;
   return {
     uuid: company.uuid,
     name: company.name,
@@ -108,7 +146,39 @@ export function toCompanyRow(company, fetchedAt = new Date().toISOString()) {
     revenue_year: numberOrNull(company.revenue?.year),
     status: company.status ?? null,
     founders_json: founders ? JSON.stringify(founders) : null,
+    about: company.about ?? null,
+    industries_json: company.taxonomy?.length ? JSON.stringify(company.taxonomy.map(tag => tag.name)) : null,
+    classifications_json: company.classifications?.length ? JSON.stringify(company.classifications) : null,
+    signal_rating: numberOrNull(company.signal_rating),
+    monthly_visits: numberOrNull(company.traffic?.monthly_visits),
+    is_hiring: typeof company.jobs?.is_hiring === 'boolean' ? (company.jobs.is_hiring ? 1 : 0) : null,
+    open_jobs: numberOrNull(company.jobs?.open_count),
+    valuation: numberOrNull(company.valuation?.value),
     raw_json: JSON.stringify(company),
     fetched_at: fetchedAt
+  };
+}
+
+// The latest filed EBITDA and profit, plus every year as JSON. Years with no
+// figures are dropped; no years at all leaves everything null. Dealroom
+// repeats the last filed figure in later years, so a run of identical values
+// is dated to its first year.
+export function toFinancials(years, fetchedAt = new Date().toISOString()) {
+  const latest = field => {
+    const known = years.filter(year => numberOrNull(year[field]) !== null).sort((a, b) => a.year - b.year);
+    let i = known.length - 1;
+    while (i > 0 && known[i - 1][field] === known[i][field] && known[i - 1].year === known[i].year - 1) i--;
+    return known[i] ?? null;
+  };
+  const ebitda = latest('ebitda');
+  const profit = latest('profit');
+  const filed = years.filter(year => ['revenue', 'ebitda', 'profit'].some(field => numberOrNull(year[field]) !== null));
+  return {
+    ebitda: ebitda?.ebitda ?? null,
+    ebitda_year: ebitda?.year ?? null,
+    profit: profit?.profit ?? null,
+    profit_year: profit?.year ?? null,
+    financials_json: filed.length ? JSON.stringify(filed) : null,
+    financials_fetched_at: fetchedAt
   };
 }
