@@ -90,7 +90,10 @@ async function pages(client, path, params, max) {
 }
 
 export async function pullVcs({ client, d1, countries = [UK, SPAIN], vcs = 10, maxCompanies = 150, partners = 10,
-  criteria = DEFAULT_CRITERIA, currency = 'GBP', concurrency = 4, now = () => new Date(), log = console.log }) {
+  criteria = DEFAULT_CRITERIA, currency = 'GBP', concurrency = 4, now = () => new Date(), log = console.log, minutes = null, signal } = {}) {
+  // With `minutes`, no new VC is started after the deadline; the one in progress finishes and is written.
+  const deadline = minutes === null ? Infinity : now().getTime() + minutes * 60_000;
+  const timeUp = () => now().getTime() >= deadline || signal?.aborted;
   const stats = { vcsChecked: 0, vcsWithMatches: 0, companies: 0, boughtRounds: 0, boughtFinancials: 0, credits: 0 };
   const matchingVcs = async () => {
     const match = matchQuery(criteria, now());
@@ -121,6 +124,7 @@ export async function pullVcs({ client, d1, countries = [UK, SPAIN], vcs = 10, m
   };
 
   while (matching < vcs) {
+    if (timeUp()) { log('Time limit reached.'); break; }
     const investor = await nextVc();
     if (!investor) { log('No more VCs to check.'); break; }
     if (stored.has(investor.uuid)) continue;
@@ -172,6 +176,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { values } = parseArgs({ options: {
     remote: { type: 'boolean', default: false },
     vcs: { type: 'string', default: '10' },
+    minutes: { type: 'string' },
     'max-companies': { type: 'string', default: '150' },
     rps: { type: 'string', default: '4' }
   } });
@@ -181,8 +186,11 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     clientSecret: process.env.DEALROOM_API_KEY ?? vars.DEALROOM_API_KEY, requestsPerSecond: Number(values.rps), retries: 4, currency: 'GBP' });
   const d1 = wranglerD1({ remote: values.remote });
   const log = message => console.log(`${new Date().toISOString()} ${message}`);
+  const controller = new AbortController();
+  for (const sig of ['SIGINT', 'SIGTERM']) process.on(sig, () => { log(`${sig}: finishing the current VC, then stopping.`); controller.abort(); });
+  const minutes = values.minutes === undefined ? null : Number(values.minutes);
   try {
-    log(`Pulling VC facts into ${values.remote ? 'remote' : 'local'} D1 until ${values.vcs} VCs have matches.`);
-    log(`Done: ${JSON.stringify(await pullVcs({ client, d1, vcs: Number(values.vcs), maxCompanies: Number(values['max-companies']), log }))}`);
+    log(`Pulling VC facts into ${values.remote ? 'remote' : 'local'} D1 until ${values.vcs} VCs have matches${minutes === null ? '' : ` or ${minutes} minutes pass`}.`);
+    log(`Done: ${JSON.stringify(await pullVcs({ client, d1, vcs: Number(values.vcs), maxCompanies: Number(values['max-companies']), log, minutes, signal: controller.signal }))}`);
   } finally { d1.close(); }
 }

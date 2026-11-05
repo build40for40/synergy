@@ -3,9 +3,12 @@
 //   npm run extension:package          store build: live API only, ready to upload
 //   npm run extension:package -- --dev same files, but keeps localhost for local testing
 //
-// The store build rewrites two development defaults so the person installing it gets a
-// working dashboard with no setup: localhost is removed from host_permissions, and the
-// dashboard's DEFAULT_API points at the live Worker. Set SYNERGY_API_URL to override it.
+// The store build rewrites the development defaults so the person installing it gets a
+// working dashboard with no setup: localhost is removed from host_permissions, the
+// dashboard's DEFAULT_API points at the live Worker (set SYNERGY_API_URL to override it),
+// sign-in uses the production WorkOS client instead of staging, and the manifest's `key`
+// (which pins the unpacked extension's ID for the sign-in redirect) is dropped, because
+// the Chrome Web Store assigns the store item its own ID.
 // Update the allowlist whenever the extension gains files; anything unlisted stops the build.
 import { execFileSync } from 'node:child_process';
 import { cpSync, existsSync, lstatSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -14,17 +17,28 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const RUNTIME_FILES = [
-  'manifest.json', 'background.js', 'dashboard.html', 'dashboard.css', 'dashboard.js',
+  'manifest.json', 'background.js', 'dashboard.html', 'dashboard.css', 'dashboard.js', 'auth.js',
   'icons/icon-16.png', 'icons/icon-32.png', 'icons/icon-48.png', 'icons/icon-128.png',
 ];
 export const LIVE_API = 'https://synergy-api.40for40.workers.dev';
+// The same WorkOS environments as Joyo and the Naughty List: staging for local builds, production for the store.
+export const WORKOS_CLIENTS = { staging: 'client_01M6E5ZDCH31RFHPJTD8N5JQZY', production: 'client_01M6E5ZDQ9XBYYE28XYN7H3XTJ' };
+const DEV_CLIENT_LINE = /^const CLIENT_ID = 'client_01M6E5ZDCH31RFHPJTD8N5JQZY';$/m;
 const DEV_API_LINE = /^const DEFAULT_API = 'http:\/\/localhost:8787';$/m;
 const VERSION = /^(0|[1-9][0-9]{0,4})(\.(0|[1-9][0-9]{0,4})){0,3}$/;
 
 export function storeManifest(manifest) {
   const out = structuredClone(manifest);
   out.host_permissions = (out.host_permissions ?? []).filter(origin => !/^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?\//.test(origin));
+  delete out.key;
   return out;
+}
+
+export function storeAuth(source) {
+  if (!DEV_CLIENT_LINE.test(source)) {
+    throw new Error(`auth.js no longer has \`const CLIENT_ID = '${WORKOS_CLIENTS.staging}';\`. Update the store rewrite in scripts/package-extension.mjs.`);
+  }
+  return source.replace(DEV_CLIENT_LINE, `const CLIENT_ID = '${WORKOS_CLIENTS.production}';`);
 }
 
 export function storeDashboard(source, api = LIVE_API) {
@@ -71,9 +85,11 @@ export function buildPackage({ root, dev = false, api = process.env.SYNERGY_API_
   const problems = checkManifest(manifest);
   if (problems.length) throw new Error(`Fix the manifest before packaging:\n- ${problems.join('\n- ')}`);
   let dashboard = readFileSync(join(source, 'dashboard.js'), 'utf8');
+  let auth = readFileSync(join(source, 'auth.js'), 'utf8');
   if (!dev) {
     manifest = storeManifest(manifest);
     dashboard = storeDashboard(dashboard, api);
+    auth = storeAuth(auth);
     if (!manifest.host_permissions.some(origin => origin.startsWith(api))) {
       throw new Error(`host_permissions has no entry for ${api}. Add "${api}/*" to extension/manifest.json.`);
     }
@@ -87,6 +103,7 @@ export function buildPackage({ root, dev = false, api = process.env.SYNERGY_API_
     }
     writeFileSync(join(staging, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
     writeFileSync(join(staging, 'dashboard.js'), dashboard);
+    writeFileSync(join(staging, 'auth.js'), auth);
     if (existsSync(join(root, 'LICENSE'))) cpSync(join(root, 'LICENSE'), join(staging, 'LICENSE'));
     const entries = [...RUNTIME_FILES, ...(existsSync(join(staging, 'LICENSE')) ? ['LICENSE'] : [])];
     mkdirSync(outDir, { recursive: true });

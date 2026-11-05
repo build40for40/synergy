@@ -1,10 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import worker from '../worker/index.js';
+import { handle } from '../worker/index.js';
 import { upsertCompanies } from '../worker/store.js';
-import { company, database } from './helpers.js';
+import { company, database, issuer, keys, signToken } from './helpers.js';
 
-const call = (env, path, init) => worker.fetch(new Request(`http://api${path}`, init), env);
+// Signed in as user_test unless a test says otherwise (tokens from test/helpers.js stand in for WorkOS).
+const call = async (env, path, init = {}, user = 'user_test') => handle(
+  new Request(`http://api${path}`, { ...init, headers: { ...init.headers, Authorization: `Bearer ${await signToken(user)}` } }),
+  env, { keys, issuer });
 const patch = (env, id, body) => call(env, `/leads/${id}`, { method: 'PATCH', body: JSON.stringify(body) });
 
 async function setup() {

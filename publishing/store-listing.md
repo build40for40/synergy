@@ -36,6 +36,8 @@ Draft copy for the dashboard fields, 5 November 2026. Check every line against t
 
 - `storage`: remembers the address of the Synergy service on this device.
 - `sidePanel`: shows the dashboard in Chrome's side panel when the user clicks the toolbar button.
+- `identity`: opens the sign-in page in Chrome's own sign-in window, so each user's leads and notes are kept to their account.
+- Host permission for `https://api.workos.com/*`: completes sign-in and keeps the user signed in (WorkOS is the sign-in provider). Only the sign-in code and tokens are sent.
 - Host permission for `https://synergy-api.40for40.workers.dev/*`: the dashboard loads today's leads from the Synergy service and saves the user's profile, feedback and notes to it. No other site is contacted, and no page the user visits is read.
 
 **Remote code:** No. All code is in the package. The service returns JSON data only.
