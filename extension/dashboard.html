@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="en-GB">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -7,54 +7,16 @@
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
-  <header>
-    <h1>Synergy</h1>
-    <p id="progress" aria-live="polite"></p>
-    <div id="account" hidden>
-      <span id="account-email"></span>
-      <button type="button" id="sign-out">Sign out</button>
-    </div>
+  <header class="top">
+    <h1 id="title"><span class="mark" aria-hidden="true"></span><span id="title-text">Synergy</span></h1>
+    <nav class="nav" aria-label="Views">
+      <span id="date" class="date"></span>
+      <button type="button" class="link" data-go="today" id="nav-today">Today</button>
+      <button type="button" class="link" data-go="history" id="nav-history">History</button>
+      <button type="button" class="link" data-go="settings" id="nav-settings">Settings</button>
+    </nav>
   </header>
-  <section id="signed-out" hidden aria-labelledby="signed-out-heading">
-    <h2 id="signed-out-heading">Sign in to see your leads</h2>
-    <p>Your leads, notes and replies are saved to your account.</p>
-    <button type="button" id="sign-in">Sign in</button>
-    <p id="sign-in-error" role="alert"></p>
-  </section>
-  <main id="signed-in" hidden>
-    <section aria-labelledby="leads-heading">
-      <h2 id="leads-heading">Today's 10</h2>
-      <p id="status" role="status"></p>
-      <ol id="leads"></ol>
-    </section>
-    <details id="profile-panel">
-      <summary>About you</summary>
-      <form id="profile">
-        <label>Who you are <textarea name="who" rows="2"></textarea></label>
-        <label>What you offer <textarea name="offer" rows="2"></textarea></label>
-        <label>Who you're looking for <textarea name="looking_for" rows="2"></textarea></label>
-        <label>Dealroom filter <input name="dealroom_filter" placeholder="and(employees_count[gte]:50,launch_date[lte]:2015)"></label>
-        <label>Dealroom sort <input name="dealroom_sort" placeholder="-employee_count_1y_growth"></label>
-        <label>API <input name="api" type="url"></label>
-        <button type="submit">Save</button>
-      </form>
-    </details>
-  </main>
-  <template id="lead-template">
-    <li class="lead">
-      <div class="lead-head">
-        <a class="name" target="_blank" rel="noopener"></a>
-        <span class="where"></span>
-      </div>
-      <p class="tagline"></p>
-      <dl class="facts"></dl>
-      <div class="feedback">
-        <span>Did you reach out?</span>
-        <button type="button" data-reached="true">Yes</button>
-        <button type="button" data-reached="false">No</button>
-      </div>
-    </li>
-  </template>
+  <main id="view" aria-live="polite"></main>
   <script src="dashboard.js" type="module"></script>
 </body>
 </html>
