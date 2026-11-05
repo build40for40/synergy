@@ -43,7 +43,8 @@ export default {
     }
 
     if (pathname === '/vcs' && method === 'GET') {
-      return json({ vcs: await listVcLeads(env.DB) });
+      const { criteria } = await getProfile(env.DB);
+      return json({ criteria, vcs: await listVcLeads(env.DB, criteria) });
     }
 
     if (pathname === '/leads/today' && method === 'GET') {

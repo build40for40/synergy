@@ -1,12 +1,49 @@
--- Leads are VC firms. Each one is shown with the partners to contact and the
--- portfolio companies that match the brief. Filled by scripts/vc-pull.mjs.
+-- Leads are VC firms with portfolio companies that match the user's criteria.
+--
+-- Three layers:
+-- 1. Dealroom facts, written only by the pull scripts: companies,
+--    company_financials, funding_rounds, investors, investments, investor_team.
+--    One row per fact as Dealroom reports it. Nothing here encodes a rule.
+-- 2. Preferences: profile.criteria_json, the user's matching rules.
+-- 3. Leads: matching is a query over 1 with 2 (worker/criteria.js); what the
+--    user did with a lead is stored in leads.
 
--- Money on rows from the VC pull is in GBP; earlier rows are USD.
+-- The currency of a company's money columns. Rows from the VC pull are GBP;
+-- the earlier company pull is USD.
 ALTER TABLE companies ADD COLUMN currency TEXT NOT NULL DEFAULT 'USD';
--- The newest disclosed round, from /data/companies/{uuid}/funding-rounds.
-ALTER TABLE companies ADD COLUMN last_round_date TEXT;
-ALTER TABLE companies ADD COLUMN last_round_label TEXT;
-ALTER TABLE companies ADD COLUMN last_round_amount REAL;
+-- Set once funding rounds were fetched, so they are not bought twice.
+ALTER TABLE companies ADD COLUMN rounds_fetched_at TEXT;
+
+ALTER TABLE profile ADD COLUMN criteria_json TEXT;
+
+-- Filed financials, one row per company and year. Dealroom repeats the last
+-- filed figure in later years; carried_forward marks those repeats.
+CREATE TABLE company_financials (
+  company_uuid TEXT NOT NULL REFERENCES companies(uuid),
+  year INTEGER NOT NULL,
+  currency TEXT NOT NULL,
+  revenue REAL,
+  ebitda REAL,
+  profit REAL,
+  carried_forward INTEGER NOT NULL DEFAULT 0,
+  fetched_at TEXT NOT NULL,
+  PRIMARY KEY (company_uuid, year)
+);
+
+-- Every disclosed round, including debt, grants and exits (IPO, acquisition).
+CREATE TABLE funding_rounds (
+  id INTEGER PRIMARY KEY,
+  company_uuid TEXT NOT NULL REFERENCES companies(uuid),
+  announced_date TEXT,
+  round_type TEXT,
+  standardized_round TEXT,
+  amount REAL,
+  currency TEXT NOT NULL,
+  is_exit INTEGER,
+  is_vc_round INTEGER,
+  fetched_at TEXT NOT NULL
+);
+CREATE INDEX funding_rounds_by_company ON funding_rounds(company_uuid, announced_date);
 
 CREATE TABLE investors (
   uuid TEXT PRIMARY KEY,
@@ -22,14 +59,26 @@ CREATE TABLE investors (
   deal_size_max REAL,
   investments_count INTEGER,
   last_investment_date TEXT,
-  currency TEXT NOT NULL DEFAULT 'GBP',
+  currency TEXT NOT NULL,
   raw_json TEXT NOT NULL,
   fetched_at TEXT NOT NULL
 );
 
--- Current partners from Dealroom. Dealroom rarely has emails, so email is
--- usually NULL; the user's own edits will need their own table.
-CREATE TABLE investor_partners (
+-- Which investor backed which company (Dealroom's portfolio list).
+CREATE TABLE investments (
+  investor_uuid TEXT NOT NULL REFERENCES investors(uuid),
+  company_uuid TEXT NOT NULL REFERENCES companies(uuid),
+  is_lead INTEGER,
+  rounds_count INTEGER,
+  last_round_date TEXT,
+  fetched_at TEXT NOT NULL,
+  PRIMARY KEY (investor_uuid, company_uuid)
+);
+CREATE INDEX investments_by_company ON investments(company_uuid);
+
+-- People at an investor, as Dealroom lists them. Dealroom has duplicate
+-- person records; reads keep one per name. Emails are rare.
+CREATE TABLE investor_team (
   investor_uuid TEXT NOT NULL REFERENCES investors(uuid),
   person_uuid TEXT NOT NULL,
   name TEXT NOT NULL,
@@ -37,18 +86,8 @@ CREATE TABLE investor_partners (
   linkedin TEXT,
   dealroom_url TEXT,
   email TEXT,
+  is_partner INTEGER,
+  is_past INTEGER,
+  fetched_at TEXT NOT NULL,
   PRIMARY KEY (investor_uuid, person_uuid)
 );
-
--- A portfolio company that matches the brief, and why.
-CREATE TABLE portfolio_matches (
-  investor_uuid TEXT NOT NULL REFERENCES investors(uuid),
-  company_uuid TEXT NOT NULL REFERENCES companies(uuid),
-  is_lead INTEGER,
-  rounds_count INTEGER,
-  ebitda_over_1m INTEGER NOT NULL,
-  series_a_plus INTEGER NOT NULL,
-  matched_at TEXT NOT NULL,
-  PRIMARY KEY (investor_uuid, company_uuid)
-);
-CREATE INDEX portfolio_matches_by_company ON portfolio_matches(company_uuid);

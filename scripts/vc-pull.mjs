@@ -1,94 +1,75 @@
-// Find VC leads: UK and Spanish VC firms whose portfolio companies match the brief.
+// Pull VC facts from Dealroom: UK and Spanish VC firms, their partners, and
+// their portfolio companies with every funding round and filed financials.
 //
-//   node scripts/vc-pull.mjs --remote --vcs 10
+//   node scripts/vc-pull.mjs --vcs 10            (local D1)
+//   node scripts/vc-pull.mjs --vcs 10 --remote   (Cloudflare D1)
 //
-// A portfolio company matches when it is headquartered in the UK or Spain,
-// operational, not exited or PE-owned, established (launched by 2018, 10 to
-// 1,000 people), growing (headcount up on a year ago), has not raised in the
-// last 2 years (any disclosed round that isn't an exit), and either filed
-// EBITDA over £1m in the last 3 years or has raised a Series A or later round. VCs are taken best-ranked first, in turn
-// from each country, until --vcs of them have at least one match.
+// It stores facts only. Which companies match is decided later by the user's
+// criteria (worker/criteria.js), so the pull takes a deliberately wide set:
+// every portfolio company based in the UK or Spain that is operational, not
+// exited or PE-owned, with 10 or more people. VCs are taken best-ranked first,
+// in turn by country, until --vcs of them have a match under the default
+// criteria.
 //
-// Money is requested in GBP. Writes investors, investor_partners,
-// portfolio_matches and the matching companies, never leads, through
-// `wrangler d1 execute` (--local by default). Cached: an investor already in
-// D1 is not pulled again, and a company with financials keeps them.
+// Money is requested in GBP. Writes companies, company_financials,
+// funding_rounds, investors, investments and investor_team, never leads.
+// Cached: an investor whose portfolio is stored is not pulled again, and a
+// GBP company with rounds and financials is not bought again.
+import { readFileSync } from 'node:fs';
 import { pathToFileURL } from 'node:url';
 import { parseArgs } from 'node:util';
 import { createDealroomClient, toFinancials } from '../worker/dealroom.js';
-import { financialsSql, sqlLiteral, upsertCompanySql, wranglerD1 } from './dealroom-pull.mjs';
-import { readFileSync } from 'node:fs';
+import { DEFAULT_CRITERIA, matchQuery } from '../worker/criteria.js';
+import { financialRowsSql, financialsSql, roundsSql, sqlLiteral, upsertCompanySql, wranglerD1 } from './dealroom-pull.mjs';
 
 export const UK = 93;
 export const SPAIN = 283;
-const SERIES_A_PLUS = /^series\s+[a-z]\b/i;
 
-// The month two years before `now`, as Dealroom's YYYY-MM.
-export function noRaiseSince(now = new Date()) {
-  return `${now.getUTCFullYear() - 2}-${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
-}
+export const universeFilter = countries => `and(hq_location[in_any]:${countries.join('|')},company_status[eq]:operational,`
+  + 'classification[nin_any]:exited|pe_owned,employees_count[gte]:10)';
 
-export const portfolioFilter = (countries, now) => `and(hq_location[in_any]:${countries.join('|')},company_status[eq]:operational,`
-  + 'classification[nin_any]:exited|pe_owned,launch_date[lte]:2018,employees_count[gte]:10,employees_count[lte]:1000,'
-  + `employee_count_1y_growth[gt]:0,last_funding.date[lt]:${noRaiseSince(now)})`;
-
-// rounds: newest first, from /funding-rounds. financials: from toFinancials, in GBP.
-// Dealroom's last_funding.date skips some rounds, so the 2-year rule and exits
-// are checked again here against every round.
-export function matchCompany(rounds, financials, now = new Date()) {
-  const cutoff = noRaiseSince(now);
-  if (rounds.some(round => round.is_exit)) return { matches: false, ebitdaOver1m: false, seriesAPlus: false, reason: 'exited' };
-  if (rounds.some(round => (round.announced_date ?? '') >= cutoff)) return { matches: false, ebitdaOver1m: false, seriesAPlus: false, reason: 'raised_recently' };
-  const ebitdaOver1m = financials.ebitda !== null && financials.ebitda > 1_000_000 && financials.ebitda_year >= now.getUTCFullYear() - 3;
-  const seriesAPlus = rounds.some(round => SERIES_A_PLUS.test(round.standardized_round ?? ''));
-  return { matches: ebitdaOver1m || seriesAPlus, ebitdaOver1m, seriesAPlus };
+// Bind values into SQL for `wrangler d1 execute --command`, which takes no binds.
+export function inline(sql, binds) {
+  let i = 0;
+  return sql.replace(/\?/g, () => sqlLiteral(binds[i++]));
 }
 
 const hq = entity => entity.locations?.find(location => location.role === 'hq') ?? null;
 const num = value => (typeof value === 'number' && Number.isFinite(value) ? value : null);
+const upsert = (table, row, keys) => {
+  const columns = Object.keys(row);
+  return `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${columns.map(column => sqlLiteral(row[column])).join(', ')})
+  ON CONFLICT(${keys.join(', ')}) DO UPDATE SET ${columns.filter(column => !keys.includes(column)).map(column => `${column}=excluded.${column}`).join(', ')};`;
+};
 
-export function investorSql(investor, fetchedAt) {
-  const row = {
+export function investorSql(investor, currency, fetchedAt) {
+  return upsert('investors', {
     uuid: investor.uuid, name: investor.name, website: investor.links?.website ?? null, linkedin: investor.links?.linkedin ?? null,
     dealroom_url: investor.dealroom_url ?? null, tagline: investor.tagline ?? null, hq_city: hq(investor)?.city?.name ?? null,
     hq_country: hq(investor)?.country?.name ?? null,
     investor_types_json: investor.types?.length ? JSON.stringify(investor.types.map(type => type.name)) : null,
     deal_size_min: num(investor.deal_size?.min), deal_size_max: num(investor.deal_size?.max),
     investments_count: num(investor.investments?.count), last_investment_date: investor.investments?.last_round_date ?? null,
-    currency: 'GBP', raw_json: JSON.stringify(investor), fetched_at: fetchedAt
-  };
-  const columns = Object.keys(row);
-  return `INSERT INTO investors (${columns.join(', ')}) VALUES (${columns.map(column => sqlLiteral(row[column])).join(', ')})
-  ON CONFLICT(uuid) DO UPDATE SET ${columns.slice(1).map(column => `${column}=excluded.${column}`).join(', ')};`;
+    currency, raw_json: JSON.stringify(investor), fetched_at: fetchedAt
+  }, ['uuid']);
 }
 
-export function partnerSql(investorUuid, member) {
+export function investmentSql(investorUuid, row, fetchedAt) {
+  return upsert('investments', {
+    investor_uuid: investorUuid, company_uuid: row.company.uuid, is_lead: typeof row.is_lead === 'boolean' ? row.is_lead : null,
+    rounds_count: num(row.rounds_count), last_round_date: row.last_round_date ?? null, fetched_at: fetchedAt
+  }, ['investor_uuid', 'company_uuid']);
+}
+
+export function teamSql(investorUuid, member, fetchedAt) {
   const person = member.person ?? {};
-  const values = [investorUuid, person.uuid, person.name, member.raw_title || member.titles?.join(', ') || null,
-    person.links?.linkedin || null, person.dealroom_url ?? null, person.email ?? null];
-  return `INSERT OR REPLACE INTO investor_partners (investor_uuid, person_uuid, name, title, linkedin, dealroom_url, email)
-  VALUES (${values.map(sqlLiteral).join(', ')});`;
+  return upsert('investor_team', {
+    investor_uuid: investorUuid, person_uuid: person.uuid, name: person.name, title: member.raw_title || member.titles?.join(', ') || null,
+    linkedin: person.links?.linkedin || null, dealroom_url: person.dealroom_url ?? null, email: person.email ?? null,
+    is_partner: typeof member.is_partner === 'boolean' ? member.is_partner : null, is_past: typeof member.is_past === 'boolean' ? member.is_past : null,
+    fetched_at: fetchedAt
+  }, ['investor_uuid', 'person_uuid']);
 }
-
-// Dealroom has duplicate person records; keep one per name, preferring one with LinkedIn.
-export function uniquePartners(members) {
-  const byName = new Map();
-  for (const member of members.filter(member => member.person?.uuid && member.person?.name)) {
-    const key = member.person.name.trim().toLowerCase();
-    const seen = byName.get(key);
-    if (!seen || (!seen.person.links?.linkedin && member.person.links?.linkedin)) byName.set(key, member);
-  }
-  return [...byName.values()];
-}
-
-const lastRoundSql = (uuid, round) => `UPDATE companies SET last_round_date=${sqlLiteral(round?.announced_date ?? null)},
-  last_round_label=${sqlLiteral(round?.standardized_round ?? round?.round_type ?? null)}, last_round_amount=${sqlLiteral(num(round?.amount))}
-  WHERE uuid=${sqlLiteral(uuid)};`;
-
-const matchSql = (investorUuid, row, match, at) => `INSERT OR REPLACE INTO portfolio_matches
-  (investor_uuid, company_uuid, is_lead, rounds_count, ebitda_over_1m, series_a_plus, matched_at)
-  VALUES (${[investorUuid, row.company.uuid, typeof row.is_lead === 'boolean' ? row.is_lead : null, num(row.rounds_count),
-    match.ebitdaOver1m, match.seriesAPlus, at].map(sqlLiteral).join(', ')});`;
 
 async function inBatches(items, size, fn) {
   const out = [];
@@ -96,16 +77,30 @@ async function inBatches(items, size, fn) {
   return out;
 }
 
-export async function pullVcs({ client, d1, countries = [UK, SPAIN], vcs = 10, maxCandidates = 25, partners = 5,
-  concurrency = 4, now = () => new Date(), log = console.log }) {
-  const stats = { vcsChecked: 0, vcsKept: 0, cachedVcs: 0, candidates: 0, matches: 0, credits: 0 };
-  const cachedInvestors = new Set((await d1.query('SELECT DISTINCT investor_uuid FROM portfolio_matches')).map(row => row.investor_uuid));
-  // Only GBP rows: the earlier company pull stored USD, which can't be tested against £1m.
-  const cachedFinancials = new Map((await d1.query('SELECT uuid, ebitda, ebitda_year, profit, profit_year, financials_json, financials_fetched_at FROM companies WHERE financials_fetched_at IS NOT NULL AND currency = \'GBP\''))
-    .map(row => [row.uuid, row]));
-  stats.cachedVcs = cachedInvestors.size;
-  let kept = cachedInvestors.size;
-  if (kept) log(`${kept} VCs already in D1; they count towards ${vcs} and are not pulled again.`);
+async function pages(client, path, params, max) {
+  const rows = [];
+  let cursor;
+  while (rows.length < max) {
+    const { body } = await client.get(path, cursor ? { ...params, cursor } : { ...params, limit: Math.min(50, max) });
+    rows.push(...(body.data ?? []));
+    cursor = body.page?.next_cursor;
+    if (!cursor) break;
+  }
+  return rows.slice(0, max);
+}
+
+export async function pullVcs({ client, d1, countries = [UK, SPAIN], vcs = 10, maxCompanies = 150, partners = 10,
+  criteria = DEFAULT_CRITERIA, currency = 'GBP', concurrency = 4, now = () => new Date(), log = console.log }) {
+  const stats = { vcsChecked: 0, vcsWithMatches: 0, companies: 0, boughtRounds: 0, boughtFinancials: 0, credits: 0 };
+  const matchingVcs = async () => {
+    const match = matchQuery(criteria, now());
+    return (await d1.query(inline(`SELECT DISTINCT investor_uuid FROM (${match.sql})`, match.binds))).map(row => row.investor_uuid);
+  };
+  const stored = new Set((await d1.query('SELECT DISTINCT investor_uuid FROM investments')).map(row => row.investor_uuid));
+  const cached = new Map((await d1.query(`SELECT uuid, rounds_fetched_at IS NOT NULL AS rounds, financials_fetched_at IS NOT NULL AS financials
+    FROM companies WHERE currency = ${sqlLiteral(currency)}`)).map(row => [row.uuid, row]));
+  let matching = (await matchingVcs()).length;
+  if (stored.size) log(`${stored.size} VCs already stored (${matching} with matches); they are not pulled again.`);
 
   // Best-ranked VCs from each country, taken in turn.
   const queues = countries.map(country => ({ country, items: [], cursor: undefined, done: false }));
@@ -125,38 +120,49 @@ export async function pullVcs({ client, d1, countries = [UK, SPAIN], vcs = 10, m
     return null;
   };
 
-  while (kept < vcs) {
+  while (matching < vcs) {
     const investor = await nextVc();
     if (!investor) { log('No more VCs to check.'); break; }
-    if (cachedInvestors.has(investor.uuid)) continue;
+    if (stored.has(investor.uuid)) continue;
     stats.vcsChecked++;
     const at = now().toISOString();
-    const { body: portfolio } = await client.get(`/data/investors/${investor.uuid}/portfolio`, { filter: portfolioFilter(countries, now()), limit: maxCandidates });
-    const rows = portfolio.data ?? [];
-    stats.candidates += rows.length;
-    const checked = await inBatches(rows, concurrency, async row => {
-      const uuid = row.company.uuid;
-      const { body: rounds } = await client.get(`/data/companies/${uuid}/funding-rounds`, { limit: 50 });
-      const financials = cachedFinancials.get(uuid) ?? toFinancials((await client.getFinancials(uuid)).years, at);
-      return { row, rounds: rounds.data ?? [], financials, match: matchCompany(rounds.data ?? [], financials, now()) };
-    });
-    const matched = checked.filter(item => item.match.matches);
-    log(`${investor.name}: ${rows.length} candidates, ${matched.length} match. ${client.creditsUsed()} credits so far.`);
-    if (!matched.length) continue;
-
-    const { body: team } = await client.get(`/data/investors/${investor.uuid}/team`, { role: 'partner', is_past: 'false', limit: partners });
-    const { body: profiles } = await client.get('/data/companies', { filter: `id[in_any]:${matched.map(item => item.row.company.uuid).join('|')}`, view: 'full', limit: 50 });
-    const full = new Map((profiles.data ?? []).map(company => [company.uuid, company]));
-    const statements = [investorSql(investor, at), ...uniquePartners(team.data ?? []).map(member => partnerSql(investor.uuid, member))];
-    for (const item of matched) {
-      const uuid = item.row.company.uuid;
-      statements.push(upsertCompanySql(full.get(uuid) ?? item.row.company, at, 'GBP'), financialsSql(uuid, item.financials),
-        lastRoundSql(uuid, item.rounds[0]), matchSql(investor.uuid, item.row, item.match, at));
+    const portfolio = await pages(client, `/data/investors/${investor.uuid}/portfolio`, { filter: universeFilter(countries) }, maxCompanies);
+    const fresh = portfolio.filter(row => !cached.has(row.company.uuid));
+    const profiles = new Map();
+    for (let i = 0; i < fresh.length; i += 50) {
+      const ids = fresh.slice(i, i + 50).map(row => row.company.uuid);
+      const { body } = await client.get('/data/companies', { filter: `id[in_any]:${ids.join('|')}`, view: 'full', limit: 50 });
+      for (const company of body.data ?? []) profiles.set(company.uuid, company);
     }
+    const facts = await inBatches(portfolio, concurrency, async row => {
+      const uuid = row.company.uuid;
+      const known = cached.get(uuid);
+      const rounds = known?.rounds ? null : (await client.get(`/data/companies/${uuid}/funding-rounds`, { limit: 100 })).body.data ?? [];
+      const years = known?.financials ? null : (await client.getFinancials(uuid)).years;
+      return { row, rounds, years };
+    });
+    const { body: team } = await client.get(`/data/investors/${investor.uuid}/team`, { role: 'partner', is_past: 'false', limit: partners });
+
+    // Parents before children: investor and companies, then their facts.
+    const statements = [investorSql(investor, currency, at)];
+    for (const { row, rounds, years } of facts) {
+      const uuid = row.company.uuid;
+      if (!cached.has(uuid)) statements.push(upsertCompanySql(profiles.get(uuid) ?? row.company, at, currency));
+      if (years) { statements.push(financialsSql(uuid, toFinancials(years, at)), ...financialRowsSql(uuid, years, currency, at)); stats.boughtFinancials++; }
+      if (rounds) { statements.push(...roundsSql(uuid, rounds, currency, at)); stats.boughtRounds++; }
+      statements.push(investmentSql(investor.uuid, row, at));
+      cached.set(uuid, { uuid, rounds: 1, financials: 1 });
+    }
+    statements.push(...(team.data ?? []).filter(member => member.person?.uuid && member.person?.name).map(member => teamSql(investor.uuid, member, at)));
     await d1.exec(statements.join('\n'));
-    kept++;
-    stats.vcsKept++;
-    stats.matches += matched.length;
+    stored.add(investor.uuid);
+    stats.companies += portfolio.length;
+
+    const now_ = await matchingVcs();
+    const has = now_.includes(investor.uuid);
+    matching = now_.length;
+    if (has) stats.vcsWithMatches++;
+    log(`${investor.name}: ${portfolio.length} companies stored, ${has ? 'has' : 'no'} matches. ${matching}/${vcs} VCs with matches, ${client.creditsUsed()} credits.`);
   }
   stats.credits = client.creditsUsed();
   return stats;
@@ -166,7 +172,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const { values } = parseArgs({ options: {
     remote: { type: 'boolean', default: false },
     vcs: { type: 'string', default: '10' },
-    'max-candidates': { type: 'string', default: '25' },
+    'max-companies': { type: 'string', default: '150' },
     rps: { type: 'string', default: '4' }
   } });
   const vars = Object.fromEntries(readFileSync(new URL('../.dev.vars', import.meta.url), 'utf8').split('\n').filter(line => line.includes('='))
@@ -176,7 +182,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   const d1 = wranglerD1({ remote: values.remote });
   const log = message => console.log(`${new Date().toISOString()} ${message}`);
   try {
-    log(`Finding ${values.vcs} VC leads into ${values.remote ? 'remote' : 'local'} D1.`);
-    log(`Done: ${JSON.stringify(await pullVcs({ client, d1, vcs: Number(values.vcs), maxCandidates: Number(values['max-candidates']), log }))}`);
+    log(`Pulling VC facts into ${values.remote ? 'remote' : 'local'} D1 until ${values.vcs} VCs have matches.`);
+    log(`Done: ${JSON.stringify(await pullVcs({ client, d1, vcs: Number(values.vcs), maxCompanies: Number(values['max-companies']), log }))}`);
   } finally { d1.close(); }
 }
