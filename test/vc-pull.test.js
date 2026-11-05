@@ -143,3 +143,12 @@ test('the pull stores facts for every holding, never leads, and skips stored VCs
   assert.deepEqual(again.calls, []);
   assert.ok(universeFilter([93, 283]).includes('hq_location[in_any]:93|283'));
 });
+
+test('stops starting new VCs once the time limit passes', async () => {
+  const d1 = sqliteD1();
+  let clock = now.getTime();
+  const api = fakeDealroom();
+  const stats = await pullVcs({ client: api.client(), d1, vcs: 5, minutes: 1, now: () => new Date(clock += 61_000), log: () => {} });
+  assert.equal(stats.vcsChecked, 0);
+  assert.deepEqual(api.calls, []);
+});
