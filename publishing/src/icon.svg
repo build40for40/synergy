@@ -1,8 +1,10 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Synergy: two overlapping circles (the broker and the VC) on 40(40) navy. Lime and pink from the logo, yellow where they meet. -->
-  <rect x="4" y="4" width="120" height="120" rx="28" fill="#081633"/>
-  <defs><clipPath id="a"><circle cx="50" cy="64" r="30"/></clipPath></defs>
-  <circle cx="50" cy="64" r="30" fill="#a6e22e"/>
-  <circle cx="78" cy="64" r="30" fill="#ff7fcf"/>
-  <circle cx="78" cy="64" r="30" fill="#ffd400" clip-path="url(#a)"/>
+  <!-- Synergy boat club icon (card 173): the club shield, parted Oxford navy and racing green,
+       with crossed brass oars, on a walnut plate. Swap for Ben's final crest once agreed. -->
+  <rect x="4" y="4" width="120" height="120" rx="24" fill="#3a2414"/>
+  <rect x="9" y="9" width="110" height="110" rx="20" fill="none" stroke="#8a6a3a" stroke-width="3"/>
+  <path d="M28 22h72v40c0 26-18 40-36 46C46 102 28 88 28 62z" fill="#1d3461"/>
+  <path d="M64 22h36v40c0 26-18 40-36 46z" fill="#1f5a3a"/>
+  <path d="M28 22h72v40c0 26-18 40-36 46C46 102 28 88 28 62z" fill="none" stroke="#c9a227" stroke-width="5"/>
+  <g stroke="#e0c068" stroke-width="7" stroke-linecap="round"><path d="M42 36l44 50M86 36L42 86"/></g>
 </svg>
