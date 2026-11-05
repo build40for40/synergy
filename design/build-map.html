@@ -1,0 +1,383 @@
+<title>Synergy Build Map</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap">
+<style>
+/* Layout: one column. The flow diagram first (how the pieces connect), then the git graph, the repo map, who owns what, and the watch-outs. */
+:root {
+  --page: #f2f0ea; --panel: #ffffff; --tile: #f7f5f0; --line: #e3dfd6; --edge: #cfc9bc;
+  --text: #1b1a17; --sub: #4a4740; --muted: #6b675f;
+  --main: #4f7a0a; --pr: #a37800; --branch: #c2408f; --plan: #8a8478; --ext: #2e4170;
+  --main-bg: #eef5e0; --pr-bg: #fbf3d6; --branch-bg: #fbe6f2; --ext-bg: #e7ebf4;
+  --logo-a: #4f7a0a; --logo-b: #b88f00; --logo-c: #c2408f;
+  --warn: #b3261e;
+  --mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --page: #081633; --panel: #10224a; --tile: #172c58; --line: #1e3260; --edge: #2e4170;
+  --text: #f2f0ea; --sub: #c9cfe0; --muted: #9aa6c4;
+  --main: #a6e22e; --pr: #ffd400; --branch: #ff7fcf; --plan: #9aa6c4; --ext: #8fb0ff;
+  --main-bg: #1d3a2a; --pr-bg: #3a3420; --branch-bg: #3a2240; --ext-bg: #1a2c58;
+  --logo-a: #a6e22e; --logo-b: #ffd400; --logo-c: #ff7fcf;
+  --warn: #ff8a80;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --page: #081633; --panel: #10224a; --tile: #172c58; --line: #1e3260; --edge: #2e4170;
+  --text: #f2f0ea; --sub: #c9cfe0; --muted: #9aa6c4;
+  --main: #a6e22e; --pr: #ffd400; --branch: #ff7fcf; --plan: #9aa6c4; --ext: #8fb0ff;
+  --main-bg: #1d3a2a; --pr-bg: #3a3420; --branch-bg: #3a2240; --ext-bg: #1a2c58;
+  --logo-a: #a6e22e; --logo-b: #ffd400; --logo-c: #ff7fcf;
+  --warn: #ff8a80;
+  color-scheme: dark; }
+
+* { box-sizing: border-box; }
+body { background: var(--page); color: var(--text); font-family: var(--mono); font-size: 13px; line-height: 1.55;
+  padding-block: 28px 56px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+.wrap { max-width: 1000px; margin: 0 auto; display: flex; flex-direction: column; gap: 36px; }
+.logo { font-weight: 800; font-size: 15px; letter-spacing: -0.02em; }
+.logo .a { color: var(--logo-a); } .logo .b { color: var(--logo-b); } .logo .c { color: var(--logo-c); }
+.logo small { color: var(--muted); font-weight: 500; margin-left: 6px; font-size: 12px; }
+h1 { font-size: clamp(24px, 4vw, 34px); margin: 10px 0 6px; letter-spacing: -0.03em; text-wrap: balance; }
+h2 { font-size: 17px; margin: 0 0 4px; letter-spacing: -0.01em; }
+.lede { color: var(--sub); max-width: 68ch; margin: 0; }
+.kicker { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .12em; margin: 0 0 6px; }
+section > p { color: var(--sub); max-width: 70ch; margin: 0 0 14px; }
+.scroll { overflow-x: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); }
+.scroll svg { display: block; min-width: 760px; width: 100%; height: auto; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 11px; color: var(--sub); margin-top: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.legend i { width: 14px; height: 10px; border-radius: 2px; border: 2px solid; display: inline-block; }
+.legend .l-main { border-color: var(--main); background: var(--main-bg); }
+.legend .l-pr { border-color: var(--pr); background: var(--pr-bg); }
+.legend .l-branch { border-color: var(--branch); background: var(--branch-bg); }
+.legend .l-plan { border-color: var(--plan); border-style: dashed; }
+.legend .l-ext { border-color: var(--ext); background: var(--ext-bg); }
+
+/* SVG roles */
+.box { stroke-width: 2; rx: 10; }
+.b-main { fill: var(--main-bg); stroke: var(--main); }
+.b-pr { fill: var(--pr-bg); stroke: var(--pr); }
+.b-branch { fill: var(--branch-bg); stroke: var(--branch); }
+.b-plan { fill: var(--panel); stroke: var(--plan); stroke-dasharray: 6 5; }
+.b-ext { fill: var(--ext-bg); stroke: var(--ext); }
+.b-user { fill: var(--tile); stroke: var(--edge); }
+.t { fill: var(--text); font-family: var(--mono); font-size: 13px; font-weight: 700; }
+.s { fill: var(--sub); font-family: var(--mono); font-size: 11px; }
+.m { fill: var(--muted); font-family: var(--mono); font-size: 10px; }
+.tag-main { fill: var(--main); } .tag-pr { fill: var(--pr); } .tag-branch { fill: var(--branch); } .tag-plan { fill: var(--plan); }
+.tagtext { fill: var(--panel); font-family: var(--mono); font-size: 9.5px; font-weight: 700; }
+.arrow { stroke: var(--sub); stroke-width: 1.6; fill: none; }
+.arrow.dash { stroke: var(--plan); stroke-dasharray: 5 4; }
+.ahead { fill: var(--sub); } .ahead.dash { fill: var(--plan); }
+.lbl { fill: var(--muted); font-family: var(--mono); font-size: 10px; }
+.lane { stroke: var(--line); stroke-width: 1; }
+.g-main { stroke: var(--main); } .g-pr { stroke: var(--pr); } .g-branch { stroke: var(--branch); }
+.gline { stroke-width: 3; fill: none; }
+.gdot { stroke-width: 3; fill: var(--panel); }
+.gdot.merged { fill: var(--main); stroke: var(--main); }
+.tick { fill: var(--muted); font-family: var(--mono); font-size: 10px; }
+.warnmark { fill: var(--warn); font-family: var(--mono); font-size: 11px; font-weight: 700; }
+
+/* Repo map + owners */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; min-width: 0; }
+.card h3 { font-size: 13px; margin: 0 0 4px; display: flex; justify-content: space-between; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.card p { margin: 0; color: var(--sub); font-size: 12px; }
+.card ul { margin: 8px 0 0; padding-left: 16px; color: var(--sub); font-size: 12px; display: flex; flex-direction: column; gap: 3px; }
+.card code, li code, p code { font-size: 11.5px; color: var(--text); }
+.chip { font-size: 9.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 2px 7px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.c-main { color: var(--main); } .c-pr { color: var(--pr); } .c-branch { color: var(--branch); } .c-plan { color: var(--plan); }
+
+table.owners { width: 100%; border-collapse: collapse; font-size: 12px; }
+.owners th { text-align: left; font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); font-weight: 500; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+.owners td { padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; color: var(--sub); }
+.owners td:first-child { color: var(--text); font-weight: 700; white-space: nowrap; }
+.owners tr:last-child td { border-bottom: 0; }
+
+.watch { display: flex; flex-direction: column; gap: 10px; }
+.watch div { border-left: 3px solid var(--warn); background: var(--panel); border-radius: 0 10px 10px 0; padding: 10px 14px; }
+.watch div.ok { border-left-color: var(--main); }
+.watch b { color: var(--text); }
+.watch p { margin: 2px 0 0; color: var(--sub); font-size: 12px; }
+.foot { font-size: 11px; color: var(--muted); border-top: 1px solid var(--line); padding-top: 12px; }
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ahead"/></marker>
+    <marker id="ahd" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" class="ahead dash"/></marker>
+  </defs>
+</svg>
+
+<div class="wrap">
+  <header>
+    <div class="logo"><span class="a">40</span><span class="b">(</span><span class="c">40</span><span class="b">)</span><small>Day 4 · Synergy · as of 13:55, Thu 5 Nov</small></div>
+    <h1>Synergy build map</h1>
+    <p class="lede">What we're building today, how the pieces connect, and where each one lives in <code>build40for40/synergy</code>. Colour shows how far each piece has got: on main, in an open PR, on a branch with no PR yet, or still only planned.</p>
+  </header>
+
+  <section aria-labelledby="flow-h">
+    <p class="kicker">1 · How it fits together</p>
+    <h2 id="flow-h">From Dealroom to the broker's side panel</h2>
+    <p>Data comes in at the top left and reaches the user at the bottom left. Dashed boxes don't exist yet.</p>
+    <div class="scroll">
+      <svg viewBox="0 0 980 560" role="img" aria-labelledby="flow-title flow-desc">
+        <title id="flow-title">Synergy architecture</title>
+        <desc id="flow-desc">Dealroom beta API feeds a daily sync Worker, which writes to the D1 database. The API reads the database and, behind a planned sign-in, serves the Chrome extension. The extension is packaged for an unlisted Chrome Web Store listing that the user installs. A planned Claude step writes a why-now line per company. The dashboard design comes from the card 166 prototype and the card 173 brand.</desc>
+
+        <!-- A Dealroom -->
+        <rect class="box b-ext" x="20" y="40" width="200" height="120" rx="10"/>
+        <text class="t" x="36" y="68">Dealroom</text>
+        <text class="s" x="36" y="90">beta API</text>
+        <text class="m" x="36" y="110">api.beta.dealroom.app</text>
+        <text class="m" x="36" y="126">OAuth client credentials</text>
+        <text class="m" x="36" y="142">2 credits a company</text>
+
+        <!-- B Sync -->
+        <rect class="box b-main" x="270" y="40" width="210" height="120" rx="10"/>
+        <text class="t" x="286" y="68">Daily sync</text>
+        <text class="s" x="286" y="90">worker/dealroom.js</text>
+        <text class="s" x="286" y="106">worker/sync.js</text>
+        <text class="m" x="286" y="124">cron 06:07 UTC, 2×50 a run</text>
+        <rect class="tag-pr" x="286" y="134" width="96" height="16" rx="8"/><text class="tagtext" x="294" y="146">PR 2 + PR 3</text>
+
+        <!-- C D1 -->
+        <rect class="box b-main" x="530" y="40" width="210" height="140" rx="10"/>
+        <text class="t" x="546" y="68">D1 database</text>
+        <text class="s" x="546" y="90">companies · profile</text>
+        <text class="s" x="546" y="106">leads · sync_runs</text>
+        <text class="m" x="546" y="124">+ sync_state (PR 3)</text>
+        <text class="m" x="546" y="140">+ feedback columns (PR 4)</text>
+        <text class="warnmark" x="546" y="164">⚠ both add migration 0002</text>
+
+        <!-- D API -->
+        <rect class="box b-main" x="790" y="40" width="170" height="140" rx="10"/>
+        <text class="t" x="806" y="68">API</text>
+        <text class="s" x="806" y="88">worker/index.js</text>
+        <text class="m" x="806" y="106">GET /health</text>
+        <text class="m" x="806" y="120">GET|PUT /profile</text>
+        <text class="m" x="806" y="134">GET /leads/today</text>
+        <text class="m" x="806" y="148">PATCH /leads/:id</text>
+        <text class="m" x="806" y="162">+ GET /leads (PR 4)</text>
+
+        <!-- F Claude why now (planned) -->
+        <rect class="box b-plan" x="530" y="220" width="210" height="64" rx="10"/>
+        <text class="t" x="546" y="246">"Why now" lines</text>
+        <text class="m" x="546" y="266">Claude, one per portfolio company</text>
+
+        <!-- E Sign-in (planned) -->
+        <rect class="box b-plan" x="790" y="220" width="170" height="64" rx="10"/>
+        <text class="t" x="806" y="246">Sign-in</text>
+        <text class="m" x="806" y="266">Google, per user</text>
+
+        <!-- G Extension -->
+        <rect class="box b-main" x="530" y="340" width="250" height="130" rx="10"/>
+        <text class="t" x="546" y="368">Chrome extension</text>
+        <text class="s" x="546" y="390">extension/background.js</text>
+        <text class="s" x="546" y="406">extension/dashboard.*</text>
+        <text class="m" x="546" y="424">today's 10 · yes/no · About you</text>
+        <rect class="tag-branch" x="546" y="436" width="140" height="16" rx="8"/><text class="tagtext" x="554" y="448">icons: publish branch</text>
+
+        <!-- H Store -->
+        <rect class="box b-branch" x="280" y="340" width="200" height="130" rx="10"/>
+        <text class="t" x="296" y="368">Chrome Web Store</text>
+        <text class="s" x="296" y="390">unlisted listing</text>
+        <text class="m" x="296" y="408">npm run extension:package</text>
+        <text class="m" x="296" y="424">publishing/ docs</text>
+        <text class="m" x="296" y="440">branch, no PR yet</text>
+
+        <!-- I User -->
+        <rect class="box b-user" x="20" y="340" width="200" height="130" rx="10"/>
+        <text class="t" x="36" y="368">The broker</text>
+        <text class="s" x="36" y="390">5 or 10 VC leads a day</text>
+        <text class="m" x="36" y="410">Sent? · Not for me</text>
+        <text class="m" x="36" y="426">Any replies? · notes</text>
+        <text class="m" x="36" y="442">client stays anonymous</text>
+
+        <!-- J Design -->
+        <rect class="box b-plan" x="530" y="500" width="250" height="44" rx="10"/>
+        <text class="t" x="546" y="520">Design</text>
+        <text class="m" x="606" y="520">prototype 166 · brand 173</text>
+        <text class="m" x="546" y="535">dashboard not restyled yet</text>
+
+        <!-- Arrows -->
+        <path class="arrow" d="M220 100H268" marker-end="url(#ah)"/>
+        <text class="lbl" x="226" y="92">pull</text>
+        <path class="arrow" d="M480 100H528" marker-end="url(#ah)"/>
+        <text class="lbl" x="484" y="92">store</text>
+        <path class="arrow" d="M740 110H788" marker-end="url(#ah)"/>
+        <text class="lbl" x="744" y="102">read</text>
+        <path class="arrow dash" d="M375 160V252H528" marker-end="url(#ahd)"/>
+        <path class="arrow dash" d="M635 220V182" marker-end="url(#ahd)"/>
+        <path class="arrow" d="M875 180V218" marker-end="url(#ah)"/>
+        <path class="arrow" d="M875 284V405H782" marker-end="url(#ah)" marker-start="url(#ah)"/>
+        <text class="lbl" x="800" y="396">leads ↔ feedback</text>
+        <path class="arrow" d="M530 405H482" marker-end="url(#ah)"/>
+        <text class="lbl" x="486" y="396">ZIP</text>
+        <path class="arrow" d="M280 405H222" marker-end="url(#ah)"/>
+        <text class="lbl" x="226" y="396">install</text>
+        <path class="arrow dash" d="M655 500V472" marker-end="url(#ahd)"/>
+      </svg>
+    </div>
+    <div class="legend">
+      <span><i class="l-main"></i>on main</span>
+      <span><i class="l-pr"></i>open PR</span>
+      <span><i class="l-branch"></i>branch, no PR</span>
+      <span><i class="l-plan"></i>planned</span>
+      <span><i class="l-ext"></i>outside service</span>
+    </div>
+  </section>
+
+  <section aria-labelledby="git-h">
+    <p class="kicker">2 · The git</p>
+    <h2 id="git-h">Branches and pull requests today</h2>
+    <p>Times are commit times. PR 3 is stacked on PR 2, so PR 2 merges first. Nothing has merged since PR 1 at 13:19.</p>
+    <div class="scroll">
+      <svg viewBox="0 0 980 300" role="img" aria-labelledby="git-title git-desc">
+        <title id="git-title">Git graph for build40for40/synergy</title>
+        <desc id="git-desc">main starts at 12:20 and merges PR 1 at 13:19. The Dealroom setup branch adds the beta API change at 13:35 as PR 2. Dealroom live sync branches from it at 13:48 as PR 3. Feedback, history and notes branches from main at 13:49 as PR 4. The publish branch branches from main with commits at 13:38 and 13:50 and has no PR.</desc>
+        <!-- time axis: x = 200 + (minutes after 12:15) * 6.6 -->
+        <g>
+          <line class="lane" x1="200" y1="270" x2="900" y2="270"/>
+          <text class="tick" x="200" y="288" text-anchor="middle">12:15</text>
+          <text class="tick" x="398" y="288" text-anchor="middle">12:45</text>
+          <text class="tick" x="596" y="288" text-anchor="middle">13:15</text>
+          <text class="tick" x="794" y="288" text-anchor="middle">13:45</text>
+        </g>
+        <!-- lane labels -->
+        <text class="s" x="16" y="44">main</text>
+        <text class="s" x="16" y="94">dealroom-extension-setup</text>
+        <text class="s" x="16" y="144">dealroom-live-sync</text>
+        <text class="s" x="16" y="194">feedback-history-notes</text>
+        <text class="s" x="16" y="244">publish-chrome-extension</text>
+
+        <!-- main: 12:20 (x233), 12:26 (x273), merge 13:19 (x622) -->
+        <path class="gline g-main" d="M233 40H930"/>
+        <!-- setup branch from 12:26 to 12:50 commit (x431), merge into main 13:19 -->
+        <path class="gline g-main" d="M273 40C290 40 290 90 310 90H431C520 90 560 40 622 40"/>
+        <!-- setup continues: 13:35 (x728) PR 2 -->
+        <path class="gline g-pr" d="M431 90H728"/>
+        <!-- live sync from 13:35 to 13:48 (x814) PR 3 -->
+        <path class="gline g-pr" d="M728 90C750 90 750 140 770 140H814"/>
+        <!-- feedback from main 13:19 to 13:49 (x820) PR 4 -->
+        <path class="gline g-pr" d="M622 40C650 40 650 190 680 190H820"/>
+        <!-- publish from main 13:19: 13:38 (x754), 13:50 (x833) -->
+        <path class="gline g-branch" d="M622 40C640 40 640 240 670 240H833"/>
+
+        <circle class="gdot g-main" cx="233" cy="40" r="6"/>
+        <circle class="gdot g-main" cx="273" cy="40" r="6"/>
+        <circle class="gdot merged" cx="622" cy="40" r="8"/>
+        <text class="m" x="606" y="24">PR 1 merged 13:19</text>
+        <circle class="gdot g-main" cx="431" cy="90" r="6"/>
+        <text class="m" x="400" y="76">scaffold 12:50</text>
+        <circle class="gdot g-pr" cx="728" cy="90" r="6"/>
+        <text class="m" x="700" y="76">PR 2 · beta API</text>
+        <circle class="gdot g-pr" cx="814" cy="140" r="6"/>
+        <text class="m" x="828" y="144">PR 3 · live sync (Lawrence)</text>
+        <circle class="gdot g-pr" cx="820" cy="190" r="6"/>
+        <text class="m" x="834" y="194">PR 4 · feedback (Samira)</text>
+        <circle class="gdot g-branch" cx="754" cy="240" r="6"/>
+        <circle class="gdot g-branch" cx="833" cy="240" r="6"/>
+        <text class="m" x="847" y="244">no PR yet</text>
+      </svg>
+    </div>
+  </section>
+
+  <section aria-labelledby="repo-h">
+    <p class="kicker">3 · The repo</p>
+    <h2 id="repo-h">What lives where</h2>
+    <p>Folders in <code>build40for40/synergy</code>, what each holds, and what's waiting to land in it.</p>
+    <div class="grid">
+      <div class="card">
+        <h3><code>worker/</code><span class="chip c-main">main</span></h3>
+        <p>The <code>synergy-api</code> Cloudflare Worker.</p>
+        <ul>
+          <li><code>dealroom.js</code>: Dealroom client and company mapping</li>
+          <li><code>sync.js</code>: the daily pull, capped at 2 pages of 50</li>
+          <li><code>store.js</code>: database queries and today's 10</li>
+          <li><code>index.js</code>: the API routes</li>
+          <li>Waiting: beta API (PR 2), live sync (PR 3), feedback + history (PR 4)</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><code>migrations/</code><span class="chip c-main">main</span></h3>
+        <p>The D1 schema, applied in number order.</p>
+        <ul>
+          <li><code>0001_init.sql</code>: companies, profile, leads, sync_runs</li>
+          <li>Waiting: <code>0002_sync_state.sql</code> (PR 3) and <code>0002_feedback.sql</code> (PR 4): same number</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><code>extension/</code><span class="chip c-main">main</span></h3>
+        <p>The Manifest V3 Chrome extension the broker uses.</p>
+        <ul>
+          <li><code>background.js</code>: toolbar button opens the dashboard</li>
+          <li><code>dashboard.html/js/css</code>: today's 10, yes/no, About you</li>
+          <li>Waiting: icons, version 0.1.0 (publish branch)</li>
+          <li>Still to come: VC leads and the 166 design</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><code>publishing/</code><span class="chip c-branch">branch</span></h3>
+        <p>How the extension reaches the user. On <code>publish-chrome-extension</code> only.</p>
+        <ul>
+          <li><code>README.md</code>: build, route, submission steps, blockers</li>
+          <li><code>store-listing.md</code>, <code>privacy.md</code>, <code>testing.md</code>, <code>install.md</code></li>
+          <li><code>src/icon.svg</code>: the boat club crest</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3><code>scripts/</code> · <code>test/</code><span class="chip c-main">main</span></h3>
+        <p>Packaging and tests (Node's built-in runner, real SQLite).</p>
+        <ul>
+          <li><code>package-extension.mjs</code>: builds the ZIP. The branch adds the store build</li>
+          <li>9 tests on main; 16 on the publish branch; more in PRs 3 and 4</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Config<span class="chip c-main">main</span></h3>
+        <p><code>wrangler.jsonc</code>, <code>.github/workflows/ci.yml</code>, <code>AGENTS.md</code>, <code>.dev.vars.example</code>.</p>
+        <ul>
+          <li>D1 <code>database_id</code> is still a placeholder</li>
+          <li>Dealroom keys live in <code>.dev.vars</code>, never in git</li>
+          <li>CI runs tests, a Wrangler dry run and the extension package</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section aria-labelledby="own-h">
+    <p class="kicker">4 · Who's on what</p>
+    <h2 id="own-h">Superthread day4 cards</h2>
+    <div class="card" style="padding:4px 6px; overflow-x:auto">
+      <table class="owners">
+        <thead><tr><th>Card</th><th>Piece</th><th>Owner</th><th>Where it is</th></tr></thead>
+        <tbody>
+          <tr><td>167</td><td>Dealroom API search</td><td>Lawrence, Ben coaching</td><td>Works on the beta API (PR 2); live sync pulled 100 UK companies (PR 3). Still founder companies, not VCs</td></tr>
+          <tr><td>168</td><td>Leads database</td><td>Lawrence, Ben coaching</td><td>Schema on main; feedback, notes and history in PR 4</td></tr>
+          <tr><td>169</td><td>Scaffold</td><td>Lawrence, Ben coaching</td><td>On main. No sign-in, D1 not created in Cloudflare</td></tr>
+          <tr><td>170</td><td>Chrome extension publishing</td><td>Lawrence, Ben coaching</td><td>Packaging and docs on the publish branch; route is an unlisted store listing</td></tr>
+          <tr><td>166</td><td>Dashboard UX</td><td>Samira</td><td>Prototype done, all 13 states, boat club brand</td></tr>
+          <tr><td>171</td><td>Dealroom research</td><td>Ben</td><td>Done: EBITDA isn't reliably in the API</td></tr>
+          <tr><td>172</td><td>Dealroom key check</td><td>Unassigned</td><td>Solved by the beta API (PR 2)</td></tr>
+          <tr><td>173</td><td>Brand guidelines</td><td>Ben</td><td>Boat club chosen; four questions open</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section aria-labelledby="watch-h">
+    <p class="kicker">5 · Watch-outs</p>
+    <h2 id="watch-h">What could trip the merge</h2>
+    <div class="watch">
+      <div><b>Two migrations numbered 0002.</b><p>PR 3 adds <code>0002_sync_state.sql</code>, PR 4 adds <code>0002_feedback.sql</code>. Whichever merges second renames its file to 0003.</p></div>
+      <div><b>PRs 3 and 4 both edit <code>worker/store.js</code> and <code>worker/index.js</code>.</b><p>Expect conflicts on the second merge. Merge order: PR 2, then PR 3, then PR 4.</p></div>
+      <div><b>Leads are still companies, not VC funds.</b><p>The switch to VCs (card 167 comment, PR 1 comment) hasn't started in code. The dashboard and prompt depend on it.</p></div>
+      <div><b>No sign-in.</b><p>Anyone with the API address can read and change the data. Blocks the store submission and any real use.</p></div>
+      <div><b>The publish branch has no PR.</b><p>It merges cleanly with main today. Open a PR when the team is ready to take it.</p></div>
+      <div class="ok"><b>Dealroom access is solved.</b><p>The key works on the beta API; a live run stored 100 companies for 200 credits.</p></div>
+    </div>
+  </section>
+
+  <p class="foot">Drawn from the repo, its open PRs and the day4 Superthread board at 13:55 on Thursday 5 November 2026. The client stays anonymous.</p>
+</div>
