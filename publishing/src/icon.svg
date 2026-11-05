@@ -1,13 +1,10 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
-  <!-- Synergy icon, Ben's brand draft 2 (card 173): the "merge" mark, two lines meeting and
-       carrying on as one, in ivory on midnight, with a dark oak top strip as the one warm accent.
-       Colours are stand-ins for Ben's named palette until his exact values are shared. -->
-  <defs><clipPath id="tile"><rect x="4" y="4" width="120" height="120" rx="26"/></clipPath></defs>
-  <g clip-path="url(#tile)">
-    <rect x="4" y="4" width="120" height="120" fill="#0f1b2d"/>
-    <rect x="4" y="4" width="120" height="12" fill="#6b4423"/>
-  </g>
-  <g transform="translate(22 26) scale(3.5)" fill="none" stroke="#f1ece2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M3 6c6 0 7 6 11 6h7M3 18c6 0 7-6 11-6"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
+  <!-- Synergy monogram (card 173): an italic S over a serif Y, ringed by an ivory and champagne gold
+       yin-yang on deep sage. The letters are Cormorant Garamond 600; render with that font loaded. -->
+  <circle cx="60" cy="60" r="55" fill="#050608" stroke="#bea26a" stroke-width="1.6"/>
+  <circle cx="60" cy="60" r="44" fill="#26332b"/>
+  <path d="M60 10 A50 50 0 0 1 60 110 A44 44 0 0 0 60 22 Z" fill="#bea26a"/>
+  <path d="M60 110 A50 50 0 0 1 60 10 A44 44 0 0 0 60 98 Z" fill="#f2eee6"/>
+  <text x="58" y="88" text-anchor="middle" font-family="'Cormorant Garamond', Garamond, serif" font-weight="600" font-size="74" fill="#bea26a">Y</text>
+  <text x="63" y="86" text-anchor="middle" font-family="'Cormorant Garamond', Garamond, serif" font-style="italic" font-weight="600" font-size="80" fill="#f2eee6" stroke="#26332b" stroke-width="5" paint-order="stroke">S</text>
 </svg>
