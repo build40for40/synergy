@@ -21,7 +21,7 @@ Shared 40 for 40 context lives in `../AGENTS.md`.
 ## Commands
 
 - Node.js 22.13 or later. `npm ci`, then `npm run db:migrate:local`.
-- `npm run db:seed:ui` replaces local companies and leads with `test/fixtures/ui-companies.sql`: 10 real Dealroom companies with every column filled, including EBITDA, for checking the dashboard against the database. Local only.
+- `npm run db:seed:ui` replaces local leads, companies and VC data with `test/fixtures/ui-vcs.sql`: 10 real UK and Spanish VCs, their partners and the portfolio companies that match the brief. Local only. Regenerate it from local D1 with `node scripts/export-ui-fixture.mjs`.
 - `npm run dev` runs the Worker locally. `npm run pull -- --minutes 1` pulls from Dealroom into local D1; add `--remote` for Cloudflare, after `npm run db:migrate:remote`.
 - `npm test`, `npm run check` (tests plus a Wrangler dry run), `npm run extension:package` (the store ZIP in `dist/`: no localhost, dashboard pointed at the live API) and `npm run extension:package:dev` (keeps localhost; never upload). Update `RUNTIME_FILES` in `scripts/package-extension.mjs` when the extension gains files.
 - Load the extension unpacked from `extension/` at `chrome://extensions`.

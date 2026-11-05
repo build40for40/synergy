@@ -4,7 +4,7 @@ export const LEADS_PER_DAY = 10;
 export const COMPANY_COLUMNS = ['uuid', 'name', 'domain', 'website', 'linkedin', 'dealroom_url', 'tagline', 'hq_city', 'hq_country',
   'launch_year', 'employees', 'employee_growth_1y', 'funding_total', 'funding_rounds', 'revenue', 'revenue_year', 'status',
   'founders_json', 'about', 'industries_json', 'classifications_json', 'signal_rating', 'monthly_visits', 'is_hiring', 'open_jobs',
-  'valuation', 'raw_json', 'fetched_at'];
+  'valuation', 'currency', 'raw_json', 'fetched_at'];
 export const FINANCIAL_COLUMNS = ['ebitda', 'ebitda_year', 'profit', 'profit_year', 'financials_json', 'financials_fetched_at'];
 export const UPSERT_COMPANY = `INSERT INTO companies (${COMPANY_COLUMNS.join(', ')}) VALUES (${COMPANY_COLUMNS.map(() => '?').join(', ')})
   ON CONFLICT(uuid) DO UPDATE SET ${COMPANY_COLUMNS.slice(1).map(column => `${column}=excluded.${column}`).join(', ')}`;
@@ -43,7 +43,7 @@ const LEAD_SELECT = `SELECT l.id, l.lead_date, l.tier, l.notes, l.notes_at, l.re
   l.sent_at, l.dismissed_at, l.dismiss_reason, l.outcome, l.outcome_at,
   c.uuid, c.name, c.domain, c.website, c.linkedin, c.dealroom_url, c.tagline, c.hq_city, c.hq_country, c.launch_year,
   c.employees, c.employee_growth_1y, c.funding_total, c.funding_rounds, c.revenue, c.revenue_year, c.status, c.founders_json,
-  c.ebitda, c.ebitda_year, c.profit, c.profit_year, c.industries_json
+  c.ebitda, c.ebitda_year, c.profit, c.profit_year, c.industries_json, c.currency
   FROM leads l JOIN companies c ON c.uuid = l.company_uuid`;
 
 // One status per lead, derived from the feedback columns:

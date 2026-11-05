@@ -36,8 +36,8 @@ export function sqlLiteral(value) {
   return `'${String(value).replaceAll("'", "''")}'`;
 }
 
-export function upsertCompanySql(company, fetchedAt) {
-  const row = toCompanyRow(company, fetchedAt);
+export function upsertCompanySql(company, fetchedAt, currency = 'USD') {
+  const row = toCompanyRow(company, fetchedAt, currency);
   const build = () => `INSERT INTO companies (${COMPANY_COLUMNS.join(', ')}) VALUES (${COMPANY_COLUMNS.map(column => sqlLiteral(row[column])).join(', ')})
   ON CONFLICT(uuid) DO UPDATE SET ${COMPANY_COLUMNS.slice(1).map(column => `${column}=excluded.${column}`).join(', ')};`;
   let sql = build();
