@@ -1,10 +1,9 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-  <!-- Synergy monogram (card 173): an italic S over a serif Y, ringed by an ivory and champagne gold
-       yin-yang on deep sage. The letters are Cormorant Garamond 600; render with that font loaded. -->
-  <circle cx="60" cy="60" r="55" fill="#050608" stroke="#bea26a" stroke-width="1.6"/>
-  <circle cx="60" cy="60" r="44" fill="#26332b"/>
-  <path d="M60 10 A50 50 0 0 1 60 110 A44 44 0 0 0 60 22 Z" fill="#bea26a"/>
-  <path d="M60 110 A50 50 0 0 1 60 10 A44 44 0 0 0 60 98 Z" fill="#f2eee6"/>
-  <text x="58" y="88" text-anchor="middle" font-family="'Cormorant Garamond', Garamond, serif" font-weight="600" font-size="74" fill="#bea26a">Y</text>
-  <text x="63" y="86" text-anchor="middle" font-family="'Cormorant Garamond', Garamond, serif" font-style="italic" font-weight="600" font-size="80" fill="#f2eee6" stroke="#26332b" stroke-width="5" paint-order="stroke">S</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Synergy mark in The Ledger (card 173), the same drawing as the site's /synergy/icon.svg: an italic
+       Bodoni S inside a double engraved oval, ultramarine on cream paper. Render with Bodoni Moda loaded
+       (extension/fonts). The 16px icon drops the inner oval and thickens the outer one so it stays legible. -->
+  <rect width="64" height="64" rx="10" fill="#efe7d6"/>
+  <ellipse cx="32" cy="32" rx="27" ry="20" fill="none" stroke="#2338a8" stroke-width="2.6"/>
+  <ellipse cx="32" cy="32" rx="22.5" ry="15.5" fill="none" stroke="#2338a8" stroke-width="1.2"/>
+  <text x="32" y="44" text-anchor="middle" font-family="'Bodoni Moda', Didot, 'Bodoni 72', serif" font-style="italic" font-size="34" fill="#2338a8">S</text>
 </svg>

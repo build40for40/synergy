@@ -19,6 +19,8 @@ import { fileURLToPath } from 'node:url';
 export const RUNTIME_FILES = [
   'manifest.json', 'background.js', 'dashboard.html', 'dashboard.css', 'dashboard.js', 'auth.js',
   'icons/icon-16.png', 'icons/icon-32.png', 'icons/icon-48.png', 'icons/icon-128.png',
+  'fonts/bodoni-moda-latin-opsz-normal.woff2', 'fonts/bodoni-moda-latin-opsz-italic.woff2',
+  'fonts/courier-prime-latin-400-normal.woff2', 'fonts/courier-prime-latin-700-normal.woff2',
 ];
 export const LIVE_API = 'https://synergy-api.40for40.workers.dev';
 // The same WorkOS environments as Joyo and the Naughty List: staging for local builds, production for the store.
