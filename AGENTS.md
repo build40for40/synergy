@@ -23,7 +23,7 @@ Shared 40 for 40 context lives in `../AGENTS.md`.
 - `npm run dev` runs the Worker locally. `npm run pull -- --minutes 1` pulls from Dealroom into local D1; add `--remote` for Cloudflare, after `npm run db:migrate:remote`.
 - `npm test`, `npm run check` (tests plus a Wrangler dry run), `npm run extension:package` (ZIP into `dist/`; update its allowlist when the extension gains files).
 - Load the extension unpacked from `extension/` at `chrome://extensions`.
-- Run Wrangler as `npm run wrangler -- <args>` (the `40for40` profile). The D1 `database_id` in `wrangler.jsonc` is a placeholder until `npm run wrangler -- d1 create synergy` is run. CI never deploys.
+- Run Wrangler as `npm run wrangler -- <args>` (the `40for40` profile). The remote D1 database is `synergy` (created 5 November 2026). CI never deploys.
 
 ## The problem
 
