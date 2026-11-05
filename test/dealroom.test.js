@@ -23,7 +23,7 @@ test('exchanges client credentials once and sends bearer + client id', async () 
   await client.listCompanies({ cursor: first.nextCursor });
 
   assert.equal(fetch.calls.filter(call => call.url === TOKEN_URL).length, 1);
-  assert.deepEqual(JSON.parse(fetch.calls[0].init.body), { client_id: 'id', client_secret: 'secret', audience: 'https://api.dealroom.app', grant_type: 'client_credentials' });
+  assert.deepEqual(JSON.parse(fetch.calls[0].init.body), { client_id: 'id', client_secret: 'secret', audience: 'https://api.beta.dealroom.app', grant_type: 'client_credentials' });
   const list = new URL(fetch.calls[1].url);
   assert.equal(list.pathname, '/data/companies');
   assert.equal(list.searchParams.get('filter'), 'and(employees_count[gte]:50)');

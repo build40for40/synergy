@@ -2,7 +2,8 @@
 // Auth is OAuth client credentials: exchange the client ID and secret for a
 // one-hour bearer token, then send it with X-Client-Id on every request.
 
-export const API_BASE = 'https://api.dealroom.app';
+// Our key is for Dealroom's beta instance; the main api.dealroom.app audience rejects it.
+export const API_BASE = 'https://api.beta.dealroom.app';
 export const TOKEN_URL = 'https://accounts.dealroom.co/oauth/token';
 export const API_VERSION = '2026-10-22';
 const USER_AGENT = 'synergy/0.0.1 (+https://build40for40.com/synergy/)';
