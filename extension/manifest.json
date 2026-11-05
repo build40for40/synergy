@@ -1,11 +1,19 @@
 {
   "manifest_version": 3,
   "name": "Synergy",
-  "version": "0.0.1",
-  "description": "Ten founder leads a day, with what's known and what isn't, and a simple did-you-reach-out loop.",
+  "version": "0.1.0",
+  "description": "A few VCs a day whose portfolio companies are ready for an exit, with the reasons why and a prompt for the first email.",
   "author": "40 for 40",
   "homepage_url": "https://build40for40.com/synergy/",
-  "permissions": ["storage"],
+  "icons": {
+    "16": "icons/icon-16.png",
+    "32": "icons/icon-32.png",
+    "48": "icons/icon-48.png",
+    "128": "icons/icon-128.png"
+  },
+  "permissions": [
+    "storage"
+  ],
   "host_permissions": [
     "http://localhost:8787/*",
     "https://synergy-api.40for40.workers.dev/*"
@@ -14,6 +22,10 @@
     "service_worker": "background.js"
   },
   "action": {
-    "default_title": "Open today's leads"
+    "default_title": "Open today's leads",
+    "default_icon": {
+      "16": "icons/icon-16.png",
+      "32": "icons/icon-32.png"
+    }
   }
 }

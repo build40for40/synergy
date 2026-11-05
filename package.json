@@ -13,7 +13,8 @@
     "check": "npm test && npm run wrangler -- deploy --dry-run",
     "extension:package": "node scripts/package-extension.mjs",
     "deploy": "npm run wrangler -- deploy",
-    "wrangler": "env -u CLOUDFLARE_API_KEY -u CLOUDFLARE_EMAIL wrangler --profile 40for40"
+    "wrangler": "env -u CLOUDFLARE_API_KEY -u CLOUDFLARE_EMAIL wrangler --profile 40for40",
+    "extension:package:dev": "node scripts/package-extension.mjs --dev"
   },
   "devDependencies": {
     "wrangler": "4.157.0"
