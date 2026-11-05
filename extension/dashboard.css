@@ -133,7 +133,7 @@ details summary { cursor: pointer; color: var(--muted); font-size: 12px; }
 
 /* Sign-in */
 .signed-out { display: grid; gap: 12px; padding: 24px 4px; }
-.signed-out h2 { margin: 0; }
+.signed-out h2 { margin: 0; font: 600 24px/1.1 var(--head); }
 .signed-out p { margin: 0; }
 .signed-out .error { color: var(--s-rej, #c0392b); }
 .account { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; font-size: 12px; margin: 0 0 12px; }
