@@ -1,16 +1,16 @@
-import { requireUser } from './auth.js';
+import { identify } from './user.js';
 import { HISTORY_FILTERS, getProfile, leadHistory, leadsFor, saveProfile, updateLead } from './store.js';
 import { listVcLeads } from './vcs.js';
 import { VC_HISTORY_FILTERS, updateVcLead, vcLeadHistory, vcLeadsToday } from './vc-leads.js';
 
-// Every route except /health needs a WorkOS access token (worker/auth.js). Anyone can
-// sign in, and each user only ever sees their own profile, leads and feedback.
-// CORS allows any origin: requests carry a bearer token, never cookies.
+// Every route except /health needs the install's id (worker/user.js; no sign-in for now).
+// Each install only ever sees its own profile, leads and feedback.
+// CORS allows any origin: requests carry a header, never cookies.
 const headers = {
   'Content-Type': 'application/json; charset=utf-8',
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, PUT, PATCH, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  'Access-Control-Allow-Headers': 'Content-Type, X-Synergy-User',
   'Cache-Control': 'no-store',
   'X-Content-Type-Options': 'nosniff'
 };
@@ -24,8 +24,7 @@ async function readJson(request) {
   try { return JSON.parse(text); } catch { return null; }
 }
 
-/** `auth` overrides WorkOS's keys and issuer, for tests. */
-export async function handle(request, env, auth = {}) {
+export async function handle(request, env) {
     const { pathname } = new URL(request.url);
     const method = request.method;
     if (method === 'OPTIONS') return new Response(null, { status: 204, headers });
@@ -36,9 +35,9 @@ export async function handle(request, env, auth = {}) {
       return json({ ok: true, companies: companies.n, last_sync: lastSync });
     }
 
-    const signedIn = await requireUser(request, env, auth);
-    if (signedIn.error) return error(signedIn.error, signedIn.message, signedIn.status);
-    const { userId } = signedIn;
+    const user = identify(request);
+    if (user.error) return error(user.error, user.message, user.status);
+    const { userId } = user;
 
     if (pathname === '/profile') {
       if (method === 'GET') return json(await getProfile(env.DB, userId));

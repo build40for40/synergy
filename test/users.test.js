@@ -2,11 +2,12 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import worker, { handle } from '../worker/index.js';
 import { upsertCompanies } from '../worker/store.js';
-import { company, database, issuer, keys, signToken } from './helpers.js';
+import { asUser, company, database } from './helpers.js';
+import { identify } from '../worker/user.js';
 
 const as = async (user, env, path, init = {}) => handle(
-  new Request(`http://api${path}`, { ...init, headers: { ...init.headers, ...(user ? { Authorization: `Bearer ${await signToken(user)}` } : {}) } }),
-  env, { keys, issuer });
+  new Request(`http://api${path}`, { ...init, headers: { ...init.headers, ...(user ? asUser(user) : {}) } }),
+  env);
 
 async function stocked() {
   const env = { DB: database() };
@@ -14,28 +15,35 @@ async function stocked() {
   return env;
 }
 
-test('every data route needs a signed-in user', async () => {
+test('every data route needs an install id', async () => {
   const env = await stocked();
-  for (const [path, method] of [['/profile', 'GET'], ['/profile', 'PUT'], ['/leads/today', 'GET'], ['/leads', 'GET'], ['/leads/1', 'PATCH']]) {
+  for (const [path, method] of [['/profile', 'GET'], ['/profile', 'PUT'], ['/leads/today', 'GET'], ['/leads', 'GET'], ['/leads/1', 'PATCH'], ['/vcs/today', 'GET']]) {
     const response = await as(null, env, path, { method, body: method === 'GET' ? undefined : '{}' });
-    assert.equal(response.status, 401, `${method} ${path}`);
-    assert.equal((await response.json()).error.code, 'sign_in_required');
+    assert.equal(response.status, 400, `${method} ${path}`);
+    assert.equal((await response.json()).error.code, 'install_id_required');
   }
 });
 
-test('health and CORS preflight stay open, and the preflight allows the Authorization header', async () => {
+test('only a v4 UUID is accepted as an install id, and it never becomes "unclaimed"', () => {
+  const req = id => new Request('http://api/', { headers: id ? { 'X-Synergy-User': id } : {} });
+  const id = '3f2b8c1e-5a4d-4e6f-9a1b-2c3d4e5f6a7b';
+  assert.deepEqual(identify(req(id)), { userId: `install_${id}` });
+  assert.deepEqual(identify(req(id.toUpperCase())), { userId: `install_${id}` });
+  for (const bad of [null, 'unclaimed', 'user_abc', `${id}x`, '3f2b8c1e-5a4d-1e6f-9a1b-2c3d4e5f6a7b']) assert.equal(identify(req(bad)).status, 400, String(bad));
+});
+
+test('health and CORS preflight stay open, and the preflight allows the install id header', async () => {
   const env = await stocked();
   assert.equal((await as(null, env, '/health')).status, 200);
   const preflight = await as(null, env, '/leads/today', { method: 'OPTIONS' });
   assert.equal(preflight.status, 204);
-  assert.match(preflight.headers.get('Access-Control-Allow-Headers'), /Authorization/);
+  assert.match(preflight.headers.get('Access-Control-Allow-Headers'), /X-Synergy-User/);
 });
 
-test('without WorkOS configured the API says so instead of serving data', async () => {
+test('the deployed worker serves data with no sign-in configured', async () => {
   const env = await stocked();
-  const response = await worker.fetch(new Request('http://api/leads/today'), env);
-  assert.equal(response.status, 503);
-  assert.equal((await response.json()).error.code, 'auth_unavailable');
+  const response = await worker.fetch(new Request('http://api/leads/today', { headers: asUser('user_alice') }), env);
+  assert.equal(response.status, 200);
 });
 
 test('each user gets their own leads, and can see the same company as someone else', async () => {
@@ -73,15 +81,6 @@ test('profiles are per user', async () => {
   const bob = await (await as('user_bob', env, '/profile')).json();
   assert.equal(bob.who, '');
   assert.equal(bob.updated_at, null);
-});
-
-test('data from before sign-in is kept but belongs to nobody who can sign in', async () => {
-  const env = { DB: database() };
-  const rows = await env.DB.prepare("SELECT COUNT(*) AS n FROM profiles WHERE user_id = 'unclaimed'").first();
-  assert.equal(rows.n, 0, 'a fresh database has nothing to carry over');
-  assert.equal(await (await import('../worker/auth.js')).authenticate(
-    new Request('http://api/', { headers: { Authorization: `Bearer ${await signToken('unclaimed')}` } }), keys, issuer), null,
-  "'unclaimed' can't be a signed-in user");
 });
 
 test('the 0006 migration moves an existing profile and leads to "unclaimed", keeping their feedback', async () => {

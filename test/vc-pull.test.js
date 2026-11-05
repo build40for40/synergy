@@ -8,7 +8,7 @@ import { listVcLeads, uniqueByName } from '../worker/vcs.js';
 import { financialRowsSql } from '../scripts/dealroom-pull.mjs';
 import { inline, pullVcs, universeFilter } from '../scripts/vc-pull.mjs';
 import { handle } from '../worker/index.js';
-import { company, database, issuer, keys, signToken } from './helpers.js';
+import { asUser, company, database } from './helpers.js';
 
 const now = new Date('2026-11-05T12:00:00Z');
 
@@ -87,10 +87,10 @@ test('GET /vcs follows the profile criteria', async () => {
   const statements = [];
   seedFacts({ exec: sql => statements.push(sql) });
   for (const sql of statements) for (const statement of sql.split(';').map(part => part.trim()).filter(Boolean)) await db.prepare(statement).run();
-  // Signed in as one user: criteria now belong to that user's profile.
+  // As one user: criteria now belong to that user's profile.
   const call = async (path, init = {}) => handle(
-    new Request(`http://api${path}`, { ...init, headers: { ...init.headers, Authorization: `Bearer ${await signToken('user_test')}` } }),
-    { DB: db }, { keys, issuer });
+    new Request(`http://api${path}`, { ...init, headers: { ...init.headers, ...asUser('user_test') } }),
+    { DB: db });
   const first = await (await call('/vcs')).json();
   assert.equal(first.vcs.length, 1);
   const [vc] = first.vcs;
@@ -107,7 +107,7 @@ test('GET /vcs follows the profile criteria', async () => {
   await call('/profile', { method: 'PUT', body: JSON.stringify({ who: 'Me again' }) });
   assert.equal((await (await call('/profile')).json()).criteria.series_a_plus, false);
   // Another user's criteria are their own: still the defaults.
-  const other = await (await handle(new Request('http://api/vcs', { headers: { Authorization: `Bearer ${await signToken('user_other')}` } }), { DB: db }, { keys, issuer })).json();
+  const other = await (await handle(new Request('http://api/vcs', { headers: asUser('user_other') }), { DB: db })).json();
   assert.equal(other.criteria.series_a_plus, true);
   assert.deepEqual(other.vcs[0].companies.map(c => c.name).sort(), ['Company 1', 'Company 2']);
 });

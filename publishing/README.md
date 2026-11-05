@@ -56,7 +56,7 @@ Later versions: bump `version` in `extension/manifest.json`, build, upload to th
 
 The packaging is ready. The product behind it isn't yet:
 
-1. **Sign-in is built but not switched on in WorkOS.** The API now requires a WorkOS token (see `AGENTS.md`). Before it works:
+1. **Sign-in is switched off.** For now the extension goes by hand to a few people who asked through the request form on the site, and each install sends a random id (`X-Synergy-User`) instead of a token. That keeps users apart but isn't authentication. Before submitting, bring back WorkOS sign-in (the commit that removed it is in git history: `worker/auth.js`, `extension/auth.js`), then:
    - Add `https://bfmnffoaomaehgekimbdkohpnoidpegd.chromiumapp.org/` as a redirect URI in the **staging** WorkOS environment, for the unpacked extension.
    - After the first store upload, add `https://<store item id>.chromiumapp.org/` in **production**.
    - Give the store reviewer a test account (an email and password in the submission's test instructions), with sample leads, never the client's.

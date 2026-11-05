@@ -12,7 +12,7 @@ Chrome 137 and later no longer accept `--load-extension` on the command line, so
 | Icon | Not run | Readable in the toolbar in both light and dark Chrome themes |
 | Install prompt | Not run | Asks only for what the extension uses (storage, side panel, the Synergy service) |
 | Opens in the side panel | Not run | Toolbar button opens the dashboard in the side panel; it stays open while switching tabs; it's usable at the panel's narrowest width |
-| Sign-in | Blocked: not built | Signed out shows the sign-in step only; signed in loads only that user's data |
+| Sign-in | Blocked: removed for hand distribution | Signed out shows the sign-in step only; signed in loads only that user's data |
 | Today's leads load | Blocked: live API not deployed | 5 or 10 leads, matching the Settings choice |
 | Feedback saves | Blocked: live API not deployed | Sent, Not for me, reply outcomes and notes survive closing and reopening |
 | Rollover | Blocked: not built | Unsent leads appear first the next day, marked with their original day |

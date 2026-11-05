@@ -15,13 +15,11 @@
   },
   "permissions": [
     "storage",
-    "sidePanel",
-    "identity"
+    "sidePanel"
   ],
   "host_permissions": [
     "http://localhost:8787/*",
-    "https://synergy-api.40for40.workers.dev/*",
-    "https://api.workos.com/*"
+    "https://synergy-api.40for40.workers.dev/*"
   ],
   "background": {
     "service_worker": "background.js"

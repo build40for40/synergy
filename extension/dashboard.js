@@ -1,7 +1,7 @@
 // Synergy side panel: today's VC leads, what's in play, history and settings.
 // Flow from design/dashboard-prototype.html (card 166); look from The Ledger landing page (card 173).
-// Sign-in (extension/auth.js): WorkOS through Chrome's sign-in window. Every API call carries the token.
-import { accessToken, currentUser, signIn, signOut } from './auth.js';
+// No sign-in for now: every API call carries this install's id (extension/install-id.js).
+import { installId } from './install-id.js';
 
 const DEFAULT_API = 'http://localhost:8787';
 const view = document.getElementById('view');
@@ -18,15 +18,10 @@ const store = {
   }
 };
 const apiBase = async () => (await store.get('api')) || DEFAULT_API;
-class SignedOut extends Error {}
 async function call(path, options = {}) {
-  const token = await accessToken();
-  if (!token) { showSignedOut(); throw new SignedOut('Sign in to see your leads.'); }
   const response = await fetch(`${await apiBase()}${path}`, {
-    ...options, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...options.headers }
+    ...options, headers: { 'Content-Type': 'application/json', 'X-Synergy-User': await installId(), ...options.headers }
   });
-  // The session is gone (expired or revoked): forget it here too.
-  if (response.status === 401) { await signOut(); showSignedOut(); throw new SignedOut('Sign in to see your leads.'); }
   const body = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(body.error?.message ?? `The server said ${response.status}.`);
   return body;
@@ -46,7 +41,7 @@ const WORDS = { 5: 'five', 10: 'ten' };
 const inWords = n => WORDS[n] ?? String(n);
 
 // ---------- State ----------
-const state = { user: null, signInError: null, view: 'today', day: null, profile: null, history: null, filter: 'all', open: null, repliesOpen: true, editing: null, error: null, loading: true, saved: false };
+const state = { view: 'today', day: null, profile: null, history: null, filter: 'all', open: null, repliesOpen: true, editing: null, error: null, loading: true, saved: false };
 
 const isQuiet = lead => lead.status === 'sent' && lead.sent_at && daysSince(lead.sent_at) >= 7;
 const contactOf = lead => {
@@ -241,8 +236,7 @@ function renderSettings() {
   const first = !p.updated_at;
   document.getElementById('title-text').textContent = first ? 'Welcome' : 'Settings';
   const sel = (name, value, options) => `<select name="${name}" id="s-${name}">${options.map(([v, label]) => `<option value="${v}"${String(value) === String(v) ? ' selected' : ''}>${label}</option>`).join('')}</select>`;
-  return `${state.user ? `<p class="account">Signed in as <b>${esc(state.user.email)}</b> <button type="button" class="link" data-act="sign-out">Sign out</button></p>` : ''}
-  <form class="form" id="settings">
+  return `<form class="form" id="settings">
     ${first ? '<p class="hint">A few VC firms every morning whose portfolio companies are ready for an exit. Tell us who you are and who you\'re looking for.</p>' : '<p class="hint">Changes apply from tomorrow\'s list.</p>'}
     <div class="group">About you</div>
     <label class="field"><span>Your name and firm</span><input name="who" id="s-who" value="${esc(p.who)}" placeholder="Used to write your emails"></label>
@@ -263,7 +257,6 @@ function renderSettings() {
 }
 
 function render() {
-  if (!state.user) return showSignedOut();
   for (const v of ['today', 'history', 'settings']) {
     const b = document.getElementById(`nav-${v}`);
     if (state.view === v) b.setAttribute('aria-current', 'page'); else b.removeAttribute('aria-current');
@@ -388,29 +381,6 @@ view.addEventListener('submit', async event => {
   }
 });
 
-// ---------- Sign-in ----------
-const nav = document.querySelector('.nav');
-function showSignedOut() {
-  state.user = null;
-  nav.hidden = true;
-  document.getElementById('title-text').textContent = 'Synergy';
-  view.innerHTML = `<section class="signed-out">
-    <span class="mono">A Chrome extension for dealmakers</span>
-    <h2>Ten calling cards.<br><em>Every morning.</em></h2>
-    <p>Sign in to see today's leads. Your notes and replies are kept with your account.</p>
-    <button type="button" class="btn" data-act="sign-in">Sign in</button>
-    ${state.signInError ? `<p class="error" role="alert">${esc(state.signInError)}</p>` : ''}
-  </section>`;
-}
-view.addEventListener('click', async event => {
-  const b = event.target.closest('[data-act="sign-in"], [data-act="sign-out"]'); if (!b) return;
-  event.stopImmediatePropagation();
-  if (b.dataset.act === 'sign-out') { await signOut(); state.day = state.history = state.profile = null; return showSignedOut(); }
-  b.disabled = true; state.signInError = null;
-  try { state.user = await signIn(); nav.hidden = false; await start(); }
-  catch (error) { state.signInError = `Sign-in didn't work: ${error.message}`; showSignedOut(); }
-}, true);
-
 // ---------- Start ----------
 async function start() {
   state.api = await apiBase();
@@ -420,5 +390,4 @@ async function start() {
   await loadToday();
 }
 
-state.user = await currentUser();
-if (state.user) start(); else showSignedOut();
+start();

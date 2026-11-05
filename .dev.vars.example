@@ -1,5 +1,2 @@
 DEALROOM_CLIENT_ID=
 DEALROOM_API_KEY=
-# The staging WorkOS client (same as Joyo and the Naughty List). wrangler.jsonc sets production;
-# this overrides it for `npm run dev`, to match the unpacked extension's staging sign-in.
-WORKOS_CLIENT_ID=client_01M6E5ZDCH31RFHPJTD8N5JQZY

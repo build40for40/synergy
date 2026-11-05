@@ -18,8 +18,8 @@ export function upsertCompanies(db, companies, fetchedAt = new Date().toISOStrin
   }));
 }
 
-// Every lead, profile and piece of feedback belongs to one signed-in user (the WorkOS user id
-// from worker/auth.js). Companies, investors and the Dealroom pull are shared.
+// Every lead, profile and piece of feedback belongs to one user (an install id, from
+// worker/user.js). Companies, investors and the Dealroom pull are shared.
 // `criteria` is always complete: the user's saved rules over the defaults.
 export async function getProfile(db, userId) {
   const row = await db.prepare('SELECT who, offer, looking_for, dealroom_filter, dealroom_sort, criteria_json, leads_per_day, updated_at FROM profiles WHERE user_id = ?').bind(userId).first()

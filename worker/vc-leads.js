@@ -1,7 +1,7 @@
 // The side panel's daily list of VC leads, the user's feedback on them, their
 // history and the streak. VC data (partners, matching companies) comes from
 // listVcLeads; this module adds what the user did with each VC. Every row
-// belongs to one signed-in user (worker/auth.js); VC data stays shared.
+// belongs to one user (worker/user.js); VC data stays shared.
 import { listVcLeads } from './vcs.js';
 
 export const OUTCOMES = ['call', 'rejected', 'no_reply'];
