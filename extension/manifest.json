@@ -5,6 +5,7 @@
   "description": "A few VCs a day whose portfolio companies are ready for an exit, with the reasons why and a prompt for the first email.",
   "author": "40 for 40",
   "homepage_url": "https://build40for40.com/synergy/",
+  "minimum_chrome_version": "116",
   "icons": {
     "16": "icons/icon-16.png",
     "32": "icons/icon-32.png",
@@ -12,7 +13,8 @@
     "128": "icons/icon-128.png"
   },
   "permissions": [
-    "storage"
+    "storage",
+    "sidePanel"
   ],
   "host_permissions": [
     "http://localhost:8787/*",
@@ -21,8 +23,11 @@
   "background": {
     "service_worker": "background.js"
   },
+  "side_panel": {
+    "default_path": "dashboard.html"
+  },
   "action": {
-    "default_title": "Open today's leads",
+    "default_title": "Open today's leads in the side panel",
     "default_icon": {
       "16": "icons/icon-16.png",
       "32": "icons/icon-32.png"

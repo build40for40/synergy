@@ -4,7 +4,7 @@ An inventory for writing the Synergy section of https://build40for40.com/privacy
 
 ## What the extension does on the device
 
-- Asks for `storage` and one host permission: the Synergy service. It doesn't read the pages the user visits, run on other sites, or ask for `tabs`, cookies or history.
+- Asks for `storage`, `sidePanel` and one host permission: the Synergy service. It doesn't read the pages the user visits, run on other sites, or ask for `tabs`, cookies or history.
 - Stores one value locally: the address of the Synergy service (`api` in `chrome.storage.local`).
 - No analytics or tracking code in the extension.
 

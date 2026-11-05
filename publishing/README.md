@@ -60,11 +60,13 @@ The packaging is ready. The product behind it isn't yet:
 2. **The live API isn't running.** The D1 `database_id` is still a placeholder, and the Dealroom key has no API access yet (card 172). The store build points at a Worker that isn't deployed.
 3. **No privacy policy for Synergy.** Unlike the Naughty List, this stores personal data on our server (the user's name, firm and pitch, plus their notes and outcomes on each lead). Add a Synergy section to https://build40for40.com/privacy/ (site repo) before submitting. Draft facts are in `privacy.md`.
 4. **Screenshots.** Take them from the installed extension once the dashboard follows the card 166 prototype. The current dashboard still shows founder-company leads.
-5. **Where the dashboard opens** is still open on card 170: a full tab (today), a popup or Chrome's side panel. The prototype is phone-width, which suits the side panel. Side panel needs the `sidePanel` permission and a `side_panel.default_path` in the manifest; add `sidepanel.html` to the allowlist if so.
+## Where the dashboard opens
 
-## Known issue in the current extension
+**Chrome's side panel**, decided with Samira on 5 November (card 170). The toolbar button opens the dashboard on the right of whatever page he's on, so he can read a fund's site or LinkedIn next to his leads. That's why the prototype on card 166 is phone-width.
 
-`background.js` calls `chrome.tabs.query({ url })` to focus an already-open dashboard tab. Without the `tabs` permission Chrome doesn't match on URL, so each click opens a new tab. `chrome.runtime.getContexts({ contextTypes: ['TAB'], documentUrls: [url] })` (Chrome 116+) finds the tab with no extra permission, which keeps the install prompt short. Moot if the dashboard moves to the side panel.
+- `manifest.json`: the `sidePanel` permission, `side_panel.default_path` set to `dashboard.html`, and `minimum_chrome_version` 116.
+- `background.js` calls `chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })`. This also removed the old new-tab code, which opened a fresh tab on every click.
+- The package check fails if the side panel page isn't in the allowlist or the permission is missing.
 
 ## References
 

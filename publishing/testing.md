@@ -10,8 +10,8 @@ Chrome 137 and later no longer accept `--load-extension` on the command line, so
 | ZIP contents | Passed 5 Nov (automated) | Only the allowlisted files; manifest has no localhost; `DEFAULT_API` is the live service |
 | Loads in Chrome | Not run | No errors on `chrome://extensions`; name, version 0.1.0 and icon are correct |
 | Icon | Not run | Readable in the toolbar in both light and dark Chrome themes |
-| Install prompt | Not run | Asks only for what the extension uses (storage, the Synergy service) |
-| Opens the dashboard | Not run | Toolbar button opens the dashboard; a second click focuses it instead of opening another (see the known issue in `README.md`) |
+| Install prompt | Not run | Asks only for what the extension uses (storage, side panel, the Synergy service) |
+| Opens in the side panel | Not run | Toolbar button opens the dashboard in the side panel; it stays open while switching tabs; it's usable at the panel's narrowest width |
 | Sign-in | Blocked: not built | Signed out shows the sign-in step only; signed in loads only that user's data |
 | Today's leads load | Blocked: live API not deployed | 5 or 10 leads, matching the Settings choice |
 | Feedback saves | Blocked: live API not deployed | Sent, Not for me, reply outcomes and notes survive closing and reopening |

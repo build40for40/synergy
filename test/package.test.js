@@ -68,3 +68,12 @@ test('manifest checks catch store-blocking problems', () => {
   const problems = checkManifest({ manifest_version: 2, version: '0.0.0', name: 'S', description: 'x'.repeat(133), icons: {} });
   assert.equal(problems.length, 7);
 });
+
+test('the dashboard opens in the side panel, and the panel page ships in the ZIP', () => {
+  const manifest = JSON.parse(readFileSync(join(root, 'extension/manifest.json'), 'utf8'));
+  assert.equal(manifest.side_panel.default_path, 'dashboard.html');
+  assert.ok(manifest.permissions.includes('sidePanel'));
+  assert.ok(RUNTIME_FILES.includes(manifest.side_panel.default_path));
+  const broken = { ...manifest, side_panel: { default_path: 'panel.html' }, permissions: ['storage'] };
+  assert.equal(checkManifest(broken).length, 2);
+});

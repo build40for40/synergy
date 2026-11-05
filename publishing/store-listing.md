@@ -35,6 +35,7 @@ Draft copy for the dashboard fields, 5 November 2026. Check every line against t
 **Permission reasons:**
 
 - `storage`: remembers the address of the Synergy service on this device.
+- `sidePanel`: shows the dashboard in Chrome's side panel when the user clicks the toolbar button.
 - Host permission for `https://synergy-api.40for40.workers.dev/*`: the dashboard loads today's leads from the Synergy service and saves the user's profile, feedback and notes to it. No other site is contacted, and no page the user visits is read.
 
 **Remote code:** No. All code is in the package. The service returns JSON data only.
@@ -50,7 +51,7 @@ Draft copy for the dashboard fields, 5 November 2026. Check every line against t
 
 ## Test instructions for reviewers
 
-> Click the Synergy toolbar button to open the dashboard. Sign in with the test account below. Today's leads load from the Synergy service. Open a lead to see its portfolio companies and the email prompt. Mark one as Sent, mark another as Not for me, and use History to see both.
+> Click the Synergy toolbar button. The dashboard opens in Chrome's side panel. Sign in with the test account below. Today's leads load from the Synergy service. Open a lead to see its portfolio companies and the email prompt. Mark one as Sent, mark another as Not for me, and use History to see both.
 >
 > Test account: [create a reviewer account with sample leads before submitting; never use the client's account].
 

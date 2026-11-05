@@ -44,6 +44,9 @@ export function checkManifest(manifest) {
   for (const size of ['16', '32', '48', '128']) {
     if (manifest.icons?.[size] !== `icons/icon-${size}.png`) problems.push(`icons.${size} must be icons/icon-${size}.png`);
   }
+  const panel = manifest.side_panel?.default_path;
+  if (panel && !RUNTIME_FILES.includes(panel)) problems.push(`side_panel.default_path ${panel} is not in the package allowlist`);
+  if (panel && !manifest.permissions?.includes('sidePanel')) problems.push('side_panel needs the sidePanel permission');
   return problems;
 }
 
