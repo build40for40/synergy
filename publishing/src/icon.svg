@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128">
+  <!-- Synergy icon, Ben's brand draft 2 (card 173): the "merge" mark, two lines meeting and
+       carrying on as one, in ivory on midnight, with a dark oak top strip as the one warm accent.
+       Colours are stand-ins for Ben's named palette until his exact values are shared. -->
+  <defs><clipPath id="tile"><rect x="4" y="4" width="120" height="120" rx="26"/></clipPath></defs>
+  <g clip-path="url(#tile)">
+    <rect x="4" y="4" width="120" height="120" fill="#0f1b2d"/>
+    <rect x="4" y="4" width="120" height="12" fill="#6b4423"/>
+  </g>
+  <g transform="translate(22 26) scale(3.5)" fill="none" stroke="#f1ece2" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6c6 0 7 6 11 6h7M3 18c6 0 7-6 11-6"/>
+  </g>
+</svg>

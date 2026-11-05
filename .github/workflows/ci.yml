@@ -22,6 +22,8 @@ jobs:
       - run: npm test
       - run: npx wrangler deploy --dry-run
       - run: npm run extension:package
+      - name: List store package
+        run: unzip -l dist/synergy-chrome-*.zip
       - name: Validate manifest
         run: |
           jq -e '.manifest_version == 3 and (.name | length > 0) and (.version | test("^[0-9]{1,5}([.][0-9]{1,5}){0,3}$"))' extension/manifest.json
