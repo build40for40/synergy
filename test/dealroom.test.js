@@ -59,3 +59,8 @@ test('maps a company and keeps unknowns null', () => {
   assert.equal(row.funding_total, null);
   assert.deepEqual(JSON.parse(row.founders_json), [{ uuid: 'p3', name: 'Founder 3' }]);
 });
+
+test('stores NULL, not [], when Dealroom lists no founders', () => {
+  const row = toCompanyRow(company(4, { founders: { total: 0, items: [] } }));
+  assert.equal(row.founders_json, null);
+});

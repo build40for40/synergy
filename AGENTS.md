@@ -10,10 +10,10 @@ Shared 40 for 40 context lives in `../AGENTS.md`.
 
 ## Layout
 
-- **`worker/`:** the `synergy-api` Cloudflare Worker. `dealroom.js` is the Dealroom client (token exchange, `GET /data/companies` with the filter DSL and cursor pages) and the company mapping. `sync.js` pulls up to 2 pages of 50 companies for the profile's filter, daily at 06:07 UTC. `store.js` holds the D1 queries and today's 10 leads. `index.js` serves `GET /health`, `GET|PUT /profile`, `GET /leads/today` and `PATCH /leads/:id` (`reached_out`, `tier`, `notes`).
-- **`migrations/`:** the D1 schema: `companies` (typed columns plus `raw_json`, with NULL meaning unknown), `profile` (single row), `leads` (a company is only ever offered once) and `sync_runs`.
+- **`worker/`:** the `synergy-api` Cloudflare Worker. `dealroom.js` is the Dealroom client (token exchange, `GET /data/companies` with the filter DSL and cursor pages) and the company mapping. `sync.js` pulls up to 2 pages of 50 companies (200 credits) daily at 06:07 UTC, for the profile's filter or the brief's default (UK, launched by 2016, 20 to 500 people, growing headcount, revenue on record, no disclosed funding). It continues from the cursor saved in `sync_state` and skips Dealroom while 30 or more unoffered companies are stored. `store.js` holds the D1 queries and today's 10 leads. `index.js` serves `GET /health`, `GET|PUT /profile`, `GET /leads/today` and `PATCH /leads/:id` (`reached_out`, `tier`, `notes`).
+- **`migrations/`:** the D1 schema: `companies` (typed columns plus `raw_json`, with NULL meaning unknown), `profile` (single row), `leads` (a company is only ever offered once), `sync_runs` and `sync_state` (the saved cursor).
 - **`extension/`:** a Manifest V3 Chrome extension. The toolbar button opens `dashboard.html`: today's 10, the "did you reach out?" buttons and the About you form. The API base defaults to `http://localhost:8787` and can be changed in the form.
-- **Companies House:** no separate source for now. Dealroom is believed to include Companies House filings, and `companies.raw_json` keeps the full record, so check which filing fields come back once there are credentials, then promote the useful ones to columns.
+- **Companies House:** no separate source for now. The company list returns no filing fields. Filed revenue, EBITDA and profit by year come from `GET /data/companies/{uuid}/financials`, at about 34 credits a company, so fetch them only for leads, not in the daily sync.
 - **No auth yet.** The API is single-user and open; add sign-in before it holds anything private.
 
 ## Commands

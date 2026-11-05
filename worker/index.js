@@ -32,7 +32,7 @@ export default {
     if (method === 'OPTIONS') return new Response(null, { status: 204, headers });
 
     if (pathname === '/health' && method === 'GET') {
-      const lastSync = await env.DB.prepare('SELECT started_at, finished_at, status, companies, error FROM sync_runs ORDER BY id DESC LIMIT 1').first();
+      const lastSync = await env.DB.prepare('SELECT started_at, finished_at, status, companies, credits_used, error FROM sync_runs ORDER BY id DESC LIMIT 1').first();
       const companies = await env.DB.prepare('SELECT COUNT(*) AS n FROM companies').first();
       return json({ ok: true, companies: companies.n, last_sync: lastSync });
     }

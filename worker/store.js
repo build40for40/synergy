@@ -47,6 +47,14 @@ function toLead(row) {
   return { ...lead, reached_out: row.reached_out === null ? null : row.reached_out === 1, founders: founders_json ? JSON.parse(founders_json) : null };
 }
 
+// Companies that could still be offered: never offered and not known to be closed or acquired.
+const UNOFFERED = `FROM companies c WHERE NOT EXISTS (SELECT 1 FROM leads l WHERE l.company_uuid = c.uuid)
+  AND (status IS NULL OR status = 'operational')`;
+
+export async function unofferedCount(db) {
+  return (await db.prepare(`SELECT COUNT(*) AS n ${UNOFFERED}`).first())?.n ?? 0;
+}
+
 // Today's leads. Tops up to 10 from companies never offered before, so a
 // company is never shown twice. Ranking is deliberately simple for now.
 export async function leadsFor(db, date) {
@@ -54,8 +62,7 @@ export async function leadsFor(db, date) {
   const missing = LEADS_PER_DAY - (existing?.n ?? 0);
   if (missing > 0) {
     await db.prepare(`INSERT INTO leads (company_uuid, lead_date)
-      SELECT uuid, ? FROM companies c WHERE NOT EXISTS (SELECT 1 FROM leads l WHERE l.company_uuid = c.uuid)
-      AND (status IS NULL OR status = 'operational')
+      SELECT uuid, ? ${UNOFFERED}
       ORDER BY employee_growth_1y IS NULL, employee_growth_1y DESC, name LIMIT ?`).bind(date, missing).run();
   }
   const { results } = await db.prepare(`${LEAD_SELECT} WHERE l.lead_date = ? ORDER BY l.id`).bind(date).all();

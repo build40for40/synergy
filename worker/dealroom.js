@@ -88,7 +88,10 @@ const numberOrNull = value => (typeof value === 'number' && Number.isFinite(valu
 export function toCompanyRow(company, fetchedAt = new Date().toISOString()) {
   const hq = company.locations?.find(location => location.role === 'hq') ?? null;
   const launchYear = Number.parseInt(String(company.launch_date ?? '').slice(0, 4), 10);
-  const founders = company.founders?.items?.map(item => ({ uuid: item.person?.uuid ?? null, name: item.person?.name ?? null })) ?? null;
+  // No founders listed means Dealroom doesn't know them, so store NULL rather than [].
+  const founders = company.founders?.items?.length
+    ? company.founders.items.map(item => ({ uuid: item.person?.uuid ?? null, name: item.person?.name ?? null }))
+    : null;
   return {
     uuid: company.uuid,
     name: company.name,
