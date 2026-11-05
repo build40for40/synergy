@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { createDealroomClient, toCompanyRow, TOKEN_URL } from '../worker/dealroom.js';
+import { createDealroomClient, toCompanyRow, toFinancials, TOKEN_URL } from '../worker/dealroom.js';
 import { company } from './helpers.js';
 
 function fakeFetch(handler) {
@@ -63,4 +63,53 @@ test('maps a company and keeps unknowns null', () => {
 test('stores NULL, not [], when Dealroom lists no founders', () => {
   const row = toCompanyRow(company(4, { founders: { total: 0, items: [] } }));
   assert.equal(row.founders_json, null);
+});
+
+test('throttles requests and retries 429s using Retry-After', async () => {
+  let clock = 0;
+  const waits = [];
+  let attempts = 0;
+  const fetch = fakeFetch(url => {
+    if (url === TOKEN_URL) return jsonResponse({ access_token: 'tok' });
+    attempts++;
+    return attempts === 1
+      ? jsonResponse({ error: { code: 'RATE_LIMITED', message: 'Slow down' } }, 429, { 'Retry-After': '3' })
+      : jsonResponse({ data: [{ year: 2024, ebitda: 5 }] }, 200, { 'X-Credits-Used': '2' });
+  });
+  const client = createDealroomClient({ clientId: 'id', clientSecret: 'secret', fetch, now: () => clock, requestsPerSecond: 4, retries: 2,
+    sleep: async ms => { waits.push(ms); clock += ms; } });
+  const { years } = await client.getFinancials('abc');
+  assert.deepEqual(years, [{ year: 2024, ebitda: 5 }]);
+  assert.ok(waits.includes(3000), 'waited for Retry-After');
+  assert.equal(client.creditsUsed(), 2);
+  assert.equal(new URL(fetch.calls.at(-1).url).pathname, '/data/companies/abc/financials');
+});
+
+test('gives up after the retry limit', async () => {
+  const fetch = fakeFetch(url => url === TOKEN_URL ? jsonResponse({ access_token: 'tok' }) : jsonResponse({}, 503));
+  const client = createDealroomClient({ clientId: 'id', clientSecret: 'secret', fetch, retries: 1, sleep: async () => {} });
+  await assert.rejects(client.getFinancials('abc'), { status: 503 });
+  assert.equal(fetch.calls.filter(call => call.url !== TOKEN_URL).length, 2);
+});
+
+test('takes the latest filed EBITDA and profit', () => {
+  const financials = toFinancials([
+    { year: 2022, revenue: 10, ebitda: 3, profit: 1 },
+    { year: 2023, revenue: 12, ebitda: 4, profit: null },
+    { year: 2024, revenue: null, ebitda: null, profit: null }
+  ], 'now');
+  assert.deepEqual({ ...financials, financials_json: JSON.parse(financials.financials_json).length },
+    { ebitda: 4, ebitda_year: 2023, profit: 1, profit_year: 2022, financials_json: 2, financials_fetched_at: 'now' });
+  assert.deepEqual(toFinancials([], 'now'), { ebitda: null, ebitda_year: null, profit: null, profit_year: null, financials_json: null, financials_fetched_at: 'now' });
+});
+
+test('dates a carried-forward figure to the year it was filed', () => {
+  const financials = toFinancials([
+    { year: 2022, ebitda: 5, profit: 1 },
+    { year: 2023, ebitda: 9, profit: 2 },
+    { year: 2024, ebitda: 9, profit: 2 },
+    { year: 2025, ebitda: 9, profit: 3 }
+  ]);
+  assert.equal(financials.ebitda_year, 2023);
+  assert.equal(financials.profit_year, 2025);
 });

@@ -11,7 +11,5 @@
     // Placeholder until `npm run wrangler -- d1 create synergy` is run. Local dev works without it.
     "database_id": "00000000-0000-0000-0000-000000000000",
     "migrations_dir": "migrations"
-  }],
-  // Daily Dealroom sync at 06:07 UTC, before the morning's leads are picked.
-  "triggers": { "crons": ["7 6 * * *"] }
+  }]
 }

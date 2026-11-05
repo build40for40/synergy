@@ -31,6 +31,7 @@ function facts(lead) {
     ['Headcount, 1 year', lead.employee_growth_1y, percent],
     ['Total funding', lead.funding_total, money],
     ['Revenue', lead.revenue, value => `${money(value)}${lead.revenue_year ? ` (${lead.revenue_year})` : ''}`],
+    ['EBITDA', lead.ebitda, value => `${money(value)}${lead.ebitda_year ? ` (${lead.ebitda_year})` : ''}`],
     ['Founders', lead.founders?.length ? lead.founders.map(f => f.name).join(', ') : null]
   ];
 }
